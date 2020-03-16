@@ -12,7 +12,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
 app.use('/user', userRoutes)
-app.use('/plant', plantRoutes)
+app.use('/plant', plantRoutes) 
 
 
 app.listen(PORT, () => {
