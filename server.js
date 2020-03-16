@@ -2,6 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 
+const server = require('http').createServer(app);
+
 require('./src/db/db');
 const userRoutes = require('./src/routes/userRoutes');
 const plantRoutes = require('./src/routes/plantRoutes');
@@ -14,6 +16,7 @@ app.use(bodyParser.json())
 app.use('/user', userRoutes)
 app.use('/plant', plantRoutes)
 
-app.listen(PORT, () => {
+
+server.listen(PORT, () => {
     console.log(`server on port ${PORT}`)
 })   
