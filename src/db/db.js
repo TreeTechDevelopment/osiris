@@ -9,14 +9,26 @@ const mongoose = require('mongoose');
 
 const DB = 'mongodb+srv://dbAdmin:Qwpoaslk1_@kaffeeqrapp-8byv0.mongodb.net/test?retryWrites=true&w=majority'
 
-const plantCollection = require('./schemas/plantSchema')
+const userCollection = require('./models/userSchema')
 
 mongoose.connect(DB, {useNewUrlParser: true, useUnifiedTopology: true})
     .then(async (db) => {
         console.log('DB connected')
+        /* let user = await userCollection.findOne({ 'rol': 'employee' })
+        const todos = [{
+            title: 'Tarea 1',
+            todo: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+            status: false
+        },{
+            title: 'Tarea 2',
+            todo: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+            status: false
+        }] 
+        user.todos = todos
+        user.save() */
         //const doc = new PDFDocument({size: 'TABLOID'});                 
-        /* for(let i = 1; i < 9001; i++){
-            let serialNumber = ''
+        /* for(let i = 1; i < 9001; i++){ 
+            let serialNumber = '' 
             if(i < 10){ serialNumber = `000${i}` }
             if(i < 100 && i >= 10){ serialNumber = `00${i}` }
             if(i < 1000 && i >= 100){ serialNumber = `0${i}` }

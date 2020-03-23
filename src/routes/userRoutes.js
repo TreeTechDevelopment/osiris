@@ -2,7 +2,7 @@ const express = require('express');
 
 const router = express.Router()
 
-const userCollection = require('../db/schemas/userSchema');
+const userCollection = require('../db/models/userSchema');
 
 router.get('/', async (req, res) => {
     const { userName, password } = req.query
@@ -21,15 +21,25 @@ router.get('/', async (req, res) => {
     }
 })
 
-router.post('/todo/', async (req,res)=> {
-    const {todoId, userName} = req.body    
+router.post('/deleteTodo/', async (req,res)=> {
+    const {todoId, userName} = req.body        
     const user = await userCollection.findOne({ "userName": userName })    
     let {todos} = user
     for(let i = 0; i < todos.length; i++){
         if(todos[i].id === todoId){ 
-            console.log(todos.splice(i,1))
+            todos[i].status = true
         }
-    }
+    }    
+    user.todos = todos
+    user.save()
+    res.status(200).json({todos}) 
+})
+
+router.post('/finishReading/', async (req, res) => {
+    const {reads, userName} = req.body
+    const user = await userCollection.findOne({ "userName": userName }) 
+    user.reads = reads
+    user.save() 
     res.status(200).json({})
 })
 
