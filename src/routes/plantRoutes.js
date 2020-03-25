@@ -97,7 +97,7 @@ router.get('/section', async (req,res) => {
 
 router.post('/',async (req, res) => {    
     const { id, name, width, height, numberFruits, temperature } = req.body.newPlant    
-    let plant = await plantCollection.findById(id)    
+    let plant = await plantCollection.findById(id)     
     plant.name = name 
     plant.width = width
     plant.height = height
