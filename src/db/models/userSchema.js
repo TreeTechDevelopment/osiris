@@ -18,7 +18,9 @@ const userSchema = Schema({
         date: String
     }],
     plantAsociated: String,
-    readToday: Boolean
+    readToday: Boolean,
+    section: String,
+    name: String
 })
 
 userSchema.methods.generateHash = function(password){

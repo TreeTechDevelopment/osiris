@@ -11,14 +11,20 @@ router.get('/', async (req, res) => {
         if(user.validPassword(password)){ 
             if(user.rol === "employee"){
                 res.status(200).json({ logged: true, user: {userName, rol: user.rol, todos:user.todos} }) 
-            }else{
-                res.status(200).json({ logged: true, user: {userName, rol: user.rol} }) 
-            }            
+            }if(user.rol === "manager"){                
+                res.status(200).json({ logged: true, user: {userName, rol: user.rol } }) 
+            }      
         }
         else{ res.status(200).json({ logged: false, user: {} }) }
     }else{
         res.status(200).json({ logged: false, user: {}})
     }
+})
+
+router.get('/search', async (req,res)=> {
+    const { section } = req.query
+    let user = await userCollection.find({"section": section})
+    res.status(200).json({ user })
 })
 
 router.post('/deleteTodo/', async (req,res)=> {

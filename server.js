@@ -5,6 +5,7 @@ const app = express();
 require('./src/db/db');
 const userRoutes = require('./src/routes/userRoutes');
 const plantRoutes = require('./src/routes/plantRoutes');
+const chatRoutes = require('./src/routes/chatRoutes');
 
 const PORT = process.env.PORT || 3000
 
@@ -18,6 +19,7 @@ require('./src/sockets/chatSocket')(io)
 
 app.use('/user', userRoutes)
 app.use('/plant', plantRoutes) 
+app.use('/chat', chatRoutes) 
 
 server.listen(PORT, () => {
     console.log(`server on port ${PORT}`)

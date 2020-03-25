@@ -15,13 +15,84 @@ const upload = multer({ storage: Storage});
 const plantCollection = require('../db/models/plantSchema');
 
 router.get('/', async (req, res) => {
-    const { id } = req.query    
-    let plant = await plantCollection.findById(id)
-    if(plant){
-        res.status(200).json({plant, status: true})
+    const { id, from, to } = req.query    
+    if(id){
+        let plant = await plantCollection.findById(id)
+        if(plant){
+            res.status(200).json({plant, status: true})
+        }else{
+            res.status(200).json({plant, status: false}) 
+        }
     }else{
-        res.status(200).json({plant, status: false}) 
-    }
+        let plants = [] 
+        for(let i = from; i < to; i++){
+            let serialNumber = ''
+            if(i < 10){ serialNumber = `000${i}` }
+            if(i >= 10 && i < 100){ serialNumber = `00${i}` }
+            if(i >= 100 && i < 1000){ serialNumber = `0${i}` }
+            if(i >= 1000){ serialNumber = `${i}` }
+            let plant = await plantCollection.findOne({ 'serialNumber': serialNumber })
+            plants.push(plant)
+        }
+        res.status(200).json({plants, status: false}) 
+    }   
+})
+
+router.get('/numberFruits', async (req,res) => {
+    const { query, value } = req.query 
+    let plants = []
+    switch(query){
+        case 'more':
+            plants = await plantCollection.find({ 'numberFruits': { $gt : value} }) 
+            break;
+        case 'less':
+            plants = await plantCollection.find({ 'numberFruits': { $lt : value} }) 
+            break
+        case 'equal':
+            plants = await plantCollection.find({ 'numberFruits': value }) 
+            break
+    }    
+    res.status(200).json({ plants })
+})
+
+router.get('/width', async (req,res) => {
+    const { query, value } = req.query 
+    let plants = []
+    switch(query){
+        case 'more':
+            plants = await plantCollection.find({ 'width': { $gt : value} }) 
+            break;
+        case 'less':
+            plants = await plantCollection.find({ 'width': { $lt : value} }) 
+            break
+        case 'equal':
+            plants = await plantCollection.find({ 'width': value }) 
+            break
+    }    
+    res.status(200).json({ plants })
+})
+
+router.get('/height', async (req,res) => {
+    const { query, value } = req.query 
+    let plants = []
+    switch(query){
+        case 'more':
+            plants = await plantCollection.find({ 'height': { $gt : value} }) 
+            break;
+        case 'less':
+            plants = await plantCollection.find({ 'height': { $lt : value} }) 
+            break
+        case 'equal':
+            plants = await plantCollection.find({ 'height': value }) 
+            break
+    }    
+    res.status(200).json({ plants })
+})
+
+router.get('/section', async (req,res) => {
+    const { value } = req.query 
+    let plants = await plantCollection.find({ 'section': value })     
+    res.status(200).json({ plants })
 })
 
 router.post('/',async (req, res) => {    
