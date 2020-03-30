@@ -13,6 +13,7 @@ const plantSchema = Schema({
     dateBuy: String,
     serialNumber: String,
     statusReported: Boolean,
+    section: String,
     report: {
         user: String,
         date: String,

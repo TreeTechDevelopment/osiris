@@ -14,8 +14,18 @@ const userCollection = require('./models/userSchema')
 mongoose.connect(DB, {useNewUrlParser: true, useUnifiedTopology: true})
     .then(async (db) => {
         console.log('DB connected')
-        /* const user = await userCollection.findOne({ 'rol': 'employee' })
-        user.name = 'Oscar Moreno'
-        user.save() */
+        /* let user = await userCollection.findOne({ 'rol': 'employee' })
+        let todos = [{
+            title: 'Tarea 1',
+            todo: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+            status: false
+        },{
+            title: 'Tarea 2',
+            todo: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+            status: false
+        }]
+        user.todos = todos
+        user.save()
+        console.log('terminado') */
     }) 
     .catch((err) => {console.log(err)}) 
