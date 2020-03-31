@@ -9,23 +9,20 @@ const mongoose = require('mongoose');
 
 const DB = 'mongodb+srv://dbAdmin:Qwpoaslk1_@kaffeeqrapp-8byv0.mongodb.net/test?retryWrites=true&w=majority'
 
-const userCollection = require('./models/userSchema')
+const plantCollection = require('./models/plantSchema')
 
 mongoose.connect(DB, {useNewUrlParser: true, useUnifiedTopology: true})
     .then(async (db) => {
         console.log('DB connected')
-        /* let user = await userCollection.findOne({ 'rol': 'employee' })
-        let todos = [{
-            title: 'Tarea 1',
-            todo: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-            status: false
-        },{
-            title: 'Tarea 2',
-            todo: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-            status: false
-        }]
-        user.todos = todos
-        user.save()
+        /* let plants = await plantCollection.find()
+        for(let i = 7000; i < plants.length; i++){
+            plants[i].statusReported = false
+            plants[i].save()
+            if(i === 1000){ console.log(i) }
+            if(i === 3000){ console.log(i) }
+            if(i === 6000){ console.log(i) }
+            if(i === 8000){ console.log(i) }
+        }
         console.log('terminado') */
     }) 
     .catch((err) => {console.log(err)}) 
