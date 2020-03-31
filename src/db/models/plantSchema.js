@@ -18,10 +18,7 @@ const plantSchema = Schema({
         user: String,
         date: String,
         description: String
-    },
-    imageReport: [{
-        fileName: String
-    }]
+    }
 })
 
 module.exports = mongoose.model('Plants', plantSchema);

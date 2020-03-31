@@ -15,6 +15,7 @@ const Storage = multer.diskStorage({
 const upload = multer({ storage: Storage});
 
 const plantCollection = require('../db/models/plantSchema');
+const imagesReportCollection = require('../db/models/imagesReportSchema');
 
 router.get('/', async (req, res) => {
     const { id, from, to } = req.query    
@@ -41,8 +42,17 @@ router.get('/', async (req, res) => {
 })
 
 router.get('/reports', async (req,res) => {
-    let plants = await plantCollection.find({ 'statusReported': true })
+    let plants = await plantCollection.find({ statusReported: true })
+    console.log('buscado')
     res.status(200).json({ plants })
+}) 
+
+router.get('/reportImages/:id', async (req,res) => {
+    let { id } = req.params    
+    let image = await imagesReportCollection.findOne({ 'plantId': id })
+    console.log(image)
+    res.contentType('json')
+    res.send(image)
 })
 
 router.get('/numberFruits', async (req,res) => {
@@ -77,18 +87,6 @@ router.get('/width', async (req,res) => {
             break
     }    
     res.status(200).json({ plants })
-})
-
-router.get('/getImage/:fileName', async (req,res) => {
-    let { fileName } = req.params
-    //console.log(path.join(__dirname,'../../imageReports/',fileName))
-    try{
-        let image = fs.readFileSync(path.join(__dirname,'../../imageReports/',fileName))
-        res.contentType('image/jprg')
-        res.send(image)
-    }catch(e){
-        res.sendStatus(404)
-    }
 })
 
 router.get('/height', async (req,res) => {
@@ -172,21 +170,33 @@ router.post('/',async (req, res) => {
     res.status(200).json({plant})
 })
 
-router.post('/report/',upload.array('reports', 3),  async (req, res) => { 
+router.post('/report',upload.array('reports', 3),  async (req, res) => { 
     const files = req.files
+    console.log(files)
     const { user, plantid, description, date } = req.body
     try{
         let plant = await plantCollection.findById(plantid)
+        let imageReports = await imagesReportCollection.findOne({ "plantId" : plant._id })
         let newImageReport = []
         for(let i = 0; i < files.length; i++){
             let { filename } = files[i]
-            newImageReport.push({ fileName: filename })
+            let data = fs.readFileSync(path.join(__dirname,'../../imageReports/', filename ))
+            newImageReport.push({ data })
+        }
+        if(imageReports){
+            imageReports.images = newImageReport
+            imageReports.save()
+        }else{
+            let newImages = new imagesReportCollection({
+                plantId: plant._id,
+                images: newImageReport
+            });
+            newImages.save()           
         }
         plant.statusReported = true
         plant.report.user = user
         plant.report.description = description
-        plant.report.date = date
-        plant.imageReport = newImageReport
+        plant.report.date = date        
         plant.save()     
         res.status(200).json({ reported: true })
     }catch(e){
