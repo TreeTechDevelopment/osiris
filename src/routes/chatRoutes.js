@@ -5,8 +5,8 @@ const router = express.Router()
 const chatCollection = require('../db/models/chatSchema');
 
 router.get('/', async (req, res) => {
-    console.log('request')
-    res.status(200).json({})
+    let chats = await chatCollection.find()
+    res.status(200).json({ chats })
 })
 
 module.exports = router

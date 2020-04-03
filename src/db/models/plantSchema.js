@@ -18,7 +18,8 @@ const plantSchema = Schema({
         user: String,
         date: String,
         description: String
-    }
+    },
+    lastUpdate: String
 })
 
 module.exports = mongoose.model('Plants', plantSchema);

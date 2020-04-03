@@ -7,25 +7,67 @@ module.exports = (io) => {
 
     io.on('connection', (socket) => {
 
-        console.log('user connected', socket.id)
+        console.log('user connected', socket.id)        
         socket.emit('connection', 'connected')
 
-        socket.on('userConnected', async (data, callback) => {            
-            for(let  i = 0; i < users.length; i++){
+        socket.on('userConnected', async (data, callback) => {
+            for(let i = 0; i < users.length; i++){
                 if(users[i].userName === data.userName){
                     users[i].socketId = socket.id
-                    let chat = await chatCollection.findOne({ 'from': data.userName})                    
-                    callback(chat)                    
+                    let chat = {}
+                    if(data.chatFrom){ chat = await chatCollection.findOne({ 'from': data.chatFrom})  }
+                    else{ chat = await chatCollection.findOne({ 'from': data.userName}) }
+                    callback(chat)
+                    console.log(users)
                     return
                 }
             }
             users.push({
                 userName: data.userName,
-                socketId: socket.id
+                socketId: socket.id 
             })
-            let chat = await chatCollection.findOne({ 'from': data.userName})            
+            console.log(users)
+            let chat = {}
+            if(data.chatFrom){ chat = await chatCollection.findOne({ 'from': data.chatFrom})  }
+            else{ chat = await chatCollection.findOne({ 'from': data.userName}) }
             callback(chat)            
-        })   
+        })  
+
+        socket.on('messageFromManager', async (data) => { 
+            let chat = await chatCollection.findOne({ 'from': data.from})                         
+            let managerId = null
+            let employeeId = null                        
+            for(let i = 0; i < users.length; i++ ){
+                if(users[i].userName === data.userName){
+                    managerId = users[i].socketId
+                }
+                if(users[i].userName === data.from){
+                    employeeId = users[i].socketId
+                }
+            }                     
+            if(employeeId){                
+                io.to(`${employeeId}`).emit('newMessage', data)                
+                let chatCreated = chat.chat
+                chatCreated.push({ 
+                    date: data.date,
+                    message: data.message,
+                    userName: data.userName                       
+                })   
+                chat.chat =  chatCreated
+                chat.save()
+                io.to(`${managerId}`).emit('newMessage', chat.chat)
+            }else{                                
+                let chatCreated = chat.chat
+                chatCreated.push({ 
+                    date: data.date,
+                    message: data.message,
+                    userName: data.userName
+                })   
+                chat.chat =  chatCreated 
+                chat.save()
+                io.to(`${managerId}`).emit('newMessage', chat.chat)                
+            }
+        })         
         
         socket.on('messageToManager', async (data) => { 
             let chat = await chatCollection.findOne({ 'from': data.userName})    
@@ -35,7 +77,7 @@ module.exports = (io) => {
         
             for(let i = 0; i < users.length; i++ ){
                 if(users[i].userName === manager.userName){
-                    managersId = users[i].socketId
+                    managerId = users[i].socketId
                 }
                 if(users[i].userName === data.userName){
                     employeeId = users[i].socketId
@@ -89,6 +131,16 @@ module.exports = (io) => {
                     newChat.save()
                 }
             }
+        })
+
+        socket.on('disconnect' , () => {
+            console.log('disconnected')
+            for(let i = 0; i < users.length; i++){
+                if(users[i].socketId = socket.id){
+                    users.splice(i,1)
+                }
+            }
+            console.log(users)
         })
     })
 }

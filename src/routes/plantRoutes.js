@@ -42,15 +42,13 @@ router.get('/', async (req, res) => {
 })
 
 router.get('/reports', async (req,res) => {
-    let plants = await plantCollection.find({ statusReported: true })
-    console.log('buscado')
+    let plants = await plantCollection.find({ statusReported: true })    
     res.status(200).json({ plants })
 }) 
 
 router.get('/reportImages/:id', async (req,res) => {
     let { id } = req.params    
-    let image = await imagesReportCollection.findOne({ 'plantId': id })
-    console.log(image)
+    let image = await imagesReportCollection.findOne({ 'plantId': id })    
     res.contentType('json')
     res.send(image)
 })
@@ -158,7 +156,7 @@ router.get('/section', async (req,res) => {
 })
 
 router.post('/',async (req, res) => {    
-    const { id, name, width, height, numberFruits, temperature, type } = req.body.newPlant    
+    const { id, name, width, height, numberFruits, temperature, type, date } = req.body.newPlant    
     let plant = await plantCollection.findById(id)     
     plant.name = name 
     plant.width = width
@@ -166,13 +164,24 @@ router.post('/',async (req, res) => {
     plant.temperature = temperature
     plant.numberFruits = numberFruits
     plant.type = type
+    plant.lastUpdate = date
     plant.save()
     res.status(200).json({plant})
 })
 
+router.post('/deleteReport', async (req,res) => {
+    let { id } = req.body    
+    let plant = await plantCollection.findById(id)
+    imagesReportCollection.findOneAndRemove({ 'plantId': id })
+    plant.statusReported = false
+    plant.report= {}
+    plant.save()
+    let plants = plantCollection.find({ statusReported: true })    
+    res.status(200).json({ deleted: true, plants })
+})
+
 router.post('/report',upload.array('reports', 3),  async (req, res) => { 
-    const files = req.files
-    console.log(files)
+    const files = req.files    
     const { user, plantid, description, date } = req.body
     try{
         let plant = await plantCollection.findById(plantid)
@@ -199,8 +208,7 @@ router.post('/report',upload.array('reports', 3),  async (req, res) => {
         plant.report.date = date        
         plant.save()     
         res.status(200).json({ reported: true })
-    }catch(e){
-        console.log(e)
+    }catch(e){        
         res.status(200).json({ reported: false })
     }
 })

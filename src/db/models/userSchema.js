@@ -20,7 +20,9 @@ const userSchema = Schema({
     plantAsociated: String,
     readToday: Boolean,
     section: String,
-    name: String
+    name: String,
+    plants: String,
+    meanReads: Number
 })
 
 userSchema.methods.generateHash = function(password){
