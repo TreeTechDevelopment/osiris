@@ -7,16 +7,19 @@ const mongoose = require('mongoose');
 //const brandedQRCode = require('branded-qr-code')
 //const PDFDocument = require('pdfkit');
 
-const DB = 'mongodb+srv://dbAdmin:Qwpoaslk1_@kaffeeqrapp-8byv0.mongodb.net/test?retryWrites=true&w=majority'
 
 const userCollection = require('./models/userSchema')
 
-mongoose.connect(DB, {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false})
+mongoose.connect(process.env.DB, {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false})
     .then(async (db) => {
         console.log('DB connected')
-        /* let user = await userCollection.findOne({ 'rol': 'employee' })
-        user.plants = '0001 - 2000'
+        /* let user = new userCollection({
+            userName: 'Propietario 1',
+            password: 'Propietario 1',
+            rol: 'owner',
+            name: 'Oscar Moreno'
+        })  
         user.save()
-        console.log('terminado') */
+        console.log('terminados') */
     }) 
     .catch((err) => {console.log(err)}) 

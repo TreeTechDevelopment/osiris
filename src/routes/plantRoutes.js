@@ -1,21 +1,14 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const getStream = require('into-stream');
 
 const router = express.Router()
-const Storage = multer.diskStorage({
-    destination(req, file, callback) {
-        callback(null, './imageReports')
-    },
-    filename(req, file, callback) {
-        callback(null, `${file.originalname}`)
-    },
-})
-const upload = multer({ storage: Storage});
+const inMemoryStorage = multer.memoryStorage()
+const upload = multer({ storage: inMemoryStorage })
+
+const {getBlobName, containerName, blobService, getFileUrl} = require('../azure')
 
 const plantCollection = require('../db/models/plantSchema');
-const imagesReportCollection = require('../db/models/imagesReportSchema');
 
 router.get('/', async (req, res) => {
     const { id, from, to } = req.query    
@@ -45,13 +38,6 @@ router.get('/reports', async (req,res) => {
     let plants = await plantCollection.find({ statusReported: true })    
     res.status(200).json({ plants })
 }) 
-
-router.get('/reportImages/:id', async (req,res) => {
-    let { id } = req.params    
-    let image = await imagesReportCollection.findOne({ 'plantId': id })    
-    res.contentType('json')
-    res.send(image)
-})
 
 router.get('/numberFruits', async (req,res) => {
     const { query, value } = req.query 
@@ -172,9 +158,17 @@ router.post('/',async (req, res) => {
 router.post('/deleteReport', async (req,res) => {
     let { id } = req.body    
     let plant = await plantCollection.findById(id)
-    imagesReportCollection.findOneAndRemove({ 'plantId': id })
+    for(let i = 0; i < plant.imagesReport.length; i++){
+        blobService.deleteBlobIfExists(containerName, plant.imagesReport[i].uri.split('/')[4], (err, result) => {
+            if(err) {
+                res.sendStatus(500)
+                return;
+            }
+        })
+    }
     plant.statusReported = false
     plant.report= {}
+    plant.imagesReport= []
     plant.save()
     let plants = plantCollection.find({ statusReported: true })    
     res.status(200).json({ deleted: true, plants })
@@ -185,28 +179,27 @@ router.post('/report',upload.array('reports', 3),  async (req, res) => {
     const { user, plantid, description, date } = req.body
     try{
         let plant = await plantCollection.findById(plantid)
-        let imageReports = await imagesReportCollection.findOne({ "plantId" : plant._id })
-        let newImageReport = []
+        let imagesReport = []
+        if(plant.imagesReport){ imagesReport = plant.imagesReport }
         for(let i = 0; i < files.length; i++){
-            let { filename } = files[i]
-            let data = fs.readFileSync(path.join(__dirname,'../../imageReports/', filename ))
-            newImageReport.push({ data })
-        }
-        if(imageReports){
-            imageReports.images = newImageReport
-            imageReports.save()
-        }else{
-            let newImages = new imagesReportCollection({
-                plantId: plant._id,
-                images: newImageReport
+            let blobName = getBlobName(files[i].originalname)
+            let stream = getStream(files[i].buffer)
+            let streamLength = files[i].buffer.length
+            imagesReport.push({ uri: getFileUrl(blobName) })
+            blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
+                if(err) {
+                    res.sendStatus(500)
+                    return;
+                }
+    
             });
-            newImages.save()           
         }
         plant.statusReported = true
         plant.report.user = user
         plant.report.description = description
-        plant.report.date = date        
-        plant.save()     
+        plant.report.date = date
+        plant.imagesReport = imagesReport        
+        plant.save()
         res.status(200).json({ reported: true })
     }catch(e){        
         res.status(200).json({ reported: false })

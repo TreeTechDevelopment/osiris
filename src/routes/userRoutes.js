@@ -1,11 +1,52 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const getStream = require('into-stream');
+
+const inMemoryStorage = multer.memoryStorage()
+const upload = multer({ storage: inMemoryStorage })
+
+const {getBlobName, containerName, blobService, getFileUrl} = require('../azure')
 
 const tokenValidation = require('../tokanValidation');
 
 const router = express.Router()
 
 const userCollection = require('../db/models/userSchema');
+const sectionCollection = require('../db/models/sectionsSchema');
+
+router.get('/', tokenValidation, async (req,res)=> {
+    let users = await userCollection.find({ 'rol': 'employee' })    
+    res.status(200).json({ users })
+})
+
+router.get('/owner', tokenValidation, async (req,res)=> {
+    let users = await userCollection.find({ 'rol': 'owner' })    
+    res.status(200).json({ users })
+})
+
+router.get('/owner&employee', tokenValidation, async (req,res)=> {
+    let employees = await userCollection.find({ 'rol': 'employee' })
+    let owners = await userCollection.find({ 'rol': 'owner' })    
+    res.status(200).json({ employees, owners })
+})
+
+router.get('/all', tokenValidation, async (req,res)=> {
+    let users = await userCollection.find()
+    let sections = await sectionCollection.find()
+    res.status(200).json({ users, sections })
+})
+
+router.get('/search', tokenValidation, async (req,res)=> {
+    const { section } = req.query
+    let users = []
+    if(section){
+        users = await userCollection.find({ 'rol': 'employee', 'section': section })  
+    }else{
+        users = await userCollection.find({ 'rol': 'employee' })  
+    }    
+    res.status(200).json({ users })
+})
 
 router.post('/login', async (req, res) => {
     const { userName, password } = req.body
@@ -14,7 +55,7 @@ router.post('/login', async (req, res) => {
     let user = await userCollection.findOne({"userName": userName}) 
     if(user){
         if(user.validPassword(password)){ 
-            if(user.rol === "employee"){
+            if(user.rol === "employee"){                
                 res.status(200).json({ logged: true, user: {userName, rol: user.rol, todos:user.todos}, token }) 
             }if(user.rol === "manager"){                
                 res.status(200).json({ logged: true, user: {userName, rol: user.rol }, token }) 
@@ -28,15 +69,103 @@ router.post('/login', async (req, res) => {
     }
 })
 
-router.get('/search', tokenValidation, async (req,res)=> {
-    const { section } = req.query
-    let users = []
-    if(section){
-        users = await userCollection.find({ 'rol': 'employee', 'section': section })  
+router.post('/updatewphoto', tokenValidation, upload.single('photo'), async (req, res) => {
+    let { file } = req
+    let { id, userName, name, address, section } = req.body
+    let user = await userCollection.findById(id)
+    let blobName = ''
+    if(user.photo.split('/')[4]){
+        blobService.deleteBlobIfExists(containerName, user.photo.split('/')[4], (err, result) => {
+            if(err) {
+                res.sendStatus(500)
+                return;
+            }
+        })
+        blobName = getBlobName(file.originalname)
+        let stream = getStream(file.buffer)
+        let streamLength = file.buffer.length
+        blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
+            if(err) {
+                res.sendStatus(500)
+                return;
+            }
+        });
     }else{
-        users = await userCollection.find({ 'rol': 'employee' })  
-    }    
-    res.status(200).json({ users })
+        blobName = getBlobName(file.originalname)
+        let stream = getStream(file.buffer)
+        let streamLength = file.buffer.length
+        blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
+            if(err) {
+                res.sendStatus(500)
+                return;
+            }
+    
+        });
+    }
+    user.userName = userName
+    user.name = name
+    user.photo = getFileUrl(blobName)
+    user.address = address
+    if(section){ user.section = section }
+    user.save()
+    res.status(200).json({ user })
+})
+
+router.post('/create', tokenValidation, upload.single('photo'),async (req, res) => {
+
+    let { file } = req
+    let { userName, name, address, section, plants, password, rol, sections } = req.body
+
+    let blobName = getBlobName(file.originalname)
+    let stream = getStream(file.buffer)
+    let streamLength = file.buffer.length
+    blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
+        if(err) {
+            res.sendStatus(500)
+            return;
+        }
+
+    });
+
+    let newUser = {
+        userName,
+        name, 
+        address,
+        photo: getFileUrl(blobName),
+        rol
+    }
+
+    if(rol === 'employee'){
+        newUser.plants = plants
+        newUser.section = section
+    }
+
+    if(rol === 'owner'){
+        for(let i = 0; i < sections.length; i++){
+            let section = await sectionCollection.findOne({ 'sectionName': sections[i] })
+            section.owner = userName
+            section.save()
+        }
+    }
+
+    let user = new userCollection(newUser)
+    let passwordHashed = user.generateHash(password)
+    user.password = passwordHashed
+    user.save()
+    
+    res.status(200).json({ user })
+})
+
+router.post('/update', tokenValidation, async (req, res) => {
+    let { id, userName, name, address, section } = req.body
+    let user = await userCollection.findById(id)
+    console.log(user)
+    user.userName = userName
+    user.name = name
+    user.address = address
+    if(section){ user.section = section }
+    user.save()
+    res.status(200).json({ user })
 })
 
 router.post('/newTask', tokenValidation, async (req,res) => {

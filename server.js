@@ -1,3 +1,7 @@
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
@@ -6,6 +10,7 @@ require('./src/db/db');
 const userRoutes = require('./src/routes/userRoutes');
 const plantRoutes = require('./src/routes/plantRoutes');
 const chatRoutes = require('./src/routes/chatRoutes');
+const sectionRoutes = require('./src/routes/sectionRoutes');
 
 const tokenValidation = require('./src/tokanValidation')
 
@@ -21,7 +26,8 @@ require('./src/sockets/chatSocket')(io)
 
 app.use('/user', userRoutes)
 app.use('/plant', tokenValidation, plantRoutes) 
-app.use('/chat', tokenValidation, chatRoutes) 
+app.use('/chat', tokenValidation, chatRoutes)
+app.use('/section', tokenValidation, sectionRoutes) 
 
 server.listen(PORT, () => {
     console.log(`server on port ${PORT}`)

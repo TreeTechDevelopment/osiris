@@ -17,12 +17,13 @@ const userSchema = Schema({
         lng: String,
         date: String
     }],
-    plantAsociated: String,
     readToday: Boolean,
     section: String,
     name: String,
     plants: String,
-    meanReads: Number
+    meanReads: Number,
+    photo: String,
+    address: String
 })
 
 userSchema.methods.generateHash = function(password){
