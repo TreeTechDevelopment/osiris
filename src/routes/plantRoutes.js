@@ -11,13 +11,19 @@ const {getBlobName, containerName, blobService, getFileUrl} = require('../azure'
 const plantCollection = require('../db/models/plantSchema');
 
 router.get('/', async (req, res) => {
-    const { id, from, to } = req.query    
+    const { id, from, to, plantsUser } = req.query    
     if(id){
+        let plantFrom = plantsUser.split('-')[0]
+        let plantTo = plantsUser.split('-')[1]
         let plant = await plantCollection.findById(id)
         if(plant){
-            res.status(200).json({plant, status: true})
+            if(plantFrom <= plant.serialNumber && plantTo >= plant.serialNumber){
+                res.status(200).json({plant, status: true})
+            }else{
+                res.status(400).send('No tienes permiso para leer este código')
+            }
         }else{
-            res.status(200).json({plant, status: false}) 
+            res.status(400).send('Este código no puede ser leído por esta aplicación')
         }
     }else{
         let plants = [] 
@@ -142,7 +148,7 @@ router.get('/section', async (req,res) => {
 })
 
 router.post('/',async (req, res) => {    
-    const { id, name, width, height, numberFruits, temperature, type, date } = req.body.newPlant    
+    const { id, name, width, height, numberFruits, temperature, type, date, plantedDate } = req.body.newPlant    
     let plant = await plantCollection.findById(id)     
     plant.name = name 
     plant.width = width
@@ -151,6 +157,7 @@ router.post('/',async (req, res) => {
     plant.numberFruits = numberFruits
     plant.type = type
     plant.lastUpdate = date
+    plant.plantedDate = plantedDate
     plant.save()
     res.status(200).json({plant})
 })

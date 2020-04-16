@@ -14,27 +14,43 @@ const router = express.Router()
 
 const userCollection = require('../db/models/userSchema');
 const sectionCollection = require('../db/models/sectionsSchema');
+const chatCollection = require('../db/models/chatSchema');
+
+const { emitNewTodo } = require('../sockets/userSocket');
+const { io } = require('../../server');
 
 router.get('/', tokenValidation, async (req,res)=> {
     let users = await userCollection.find({ 'rol': 'employee' })    
     res.status(200).json({ users })
 })
 
+router.get('/employee-section', tokenValidation, async (req,res)=> {
+    let users = await userCollection.find({ 'rol': 'employee' })
+    let sections = await sectionCollection.find()    
+    res.status(200).json({ users, sections })
+})
+
+router.get('/manager-section', tokenValidation, async (req,res)=> {
+    let users = await userCollection.find({ 'rol': 'manager' }) 
+    let sections = await sectionCollection.find()   
+    res.status(200).json({ users, sections })
+})
+
 router.get('/owner', tokenValidation, async (req,res)=> {
-    let users = await userCollection.find({ 'rol': 'owner' })    
+    let users = await userCollection.find({ 'rol': 'owner' })  
     res.status(200).json({ users })
+})
+
+router.get('/owner-section', tokenValidation, async (req,res)=> {
+    let users = await userCollection.find({ 'rol': 'owner' }) 
+    let sections = await sectionCollection.find()    
+    res.status(200).json({ users, sections })
 })
 
 router.get('/owner&employee', tokenValidation, async (req,res)=> {
     let employees = await userCollection.find({ 'rol': 'employee' })
     let owners = await userCollection.find({ 'rol': 'owner' })    
     res.status(200).json({ employees, owners })
-})
-
-router.get('/all', tokenValidation, async (req,res)=> {
-    let users = await userCollection.find()
-    let sections = await sectionCollection.find()
-    res.status(200).json({ users, sections })
 })
 
 router.get('/search', tokenValidation, async (req,res)=> {
@@ -56,7 +72,7 @@ router.post('/login', async (req, res) => {
     if(user){
         if(user.validPassword(password)){ 
             if(user.rol === "employee"){                
-                res.status(200).json({ logged: true, user: {userName, rol: user.rol, todos:user.todos}, token }) 
+                res.status(200).json({ logged: true, user: {userName, rol: user.rol, todos:user.todos, plants: user.plants}, token }) 
             }if(user.rol === "manager"){                
                 res.status(200).json({ logged: true, user: {userName, rol: user.rol }, token }) 
             }if(user.rol === "admin"){                
@@ -157,13 +173,24 @@ router.post('/create', tokenValidation, upload.single('photo'),async (req, res) 
 })
 
 router.post('/update', tokenValidation, async (req, res) => {
-    let { id, userName, name, address, section } = req.body
+    let { id, userName, name, address, section, plants } = req.body
     let user = await userCollection.findById(id)
-    console.log(user)
+    if(user.rol === "employee"){
+        let chat = await chatCollection.findOne({ 'from': user.userName })
+        chat.from = userName
+        chat.save()
+    }if(user.rol === "manager"){
+        let chats = await chatCollection.find({ 'to': user.userName })
+        for(let i = 0; i < chats.length; i++){
+            chats[i].to = userName
+            chats[i].save()
+        }
+    }
     user.userName = userName
     user.name = name
     user.address = address
     if(section){ user.section = section }
+    if(plants){ user.plants = plants }
     user.save()
     res.status(200).json({ user })
 })
@@ -171,33 +198,48 @@ router.post('/update', tokenValidation, async (req, res) => {
 router.post('/newTask', tokenValidation, async (req,res) => {
     try{
         const {task} = req.body
-        const {title, description, plants} = task           
-        for(let i = 0; i < plants.length; i++){
-            let todo = description + `\nPlantas:`
-            let users = await userCollection.find({ 'section': plants[i].section })
-            for(let j = 0; j < plants[i].number.length; j++){
-                todo += `\n${plants[i].number[j]}`
-            }        
-            for(let j = 0; j < users.length; j++){
-                let todos = users[i].todos
-                todos.push({
-                    title,
-                    todo,
-                    status: false
-                })
-                users[i].todos = todos
-                users[i].save()
+        const {title, description, plants, plantsAlreadyOrdenated, userName } = task 
+        if(plantsAlreadyOrdenated){
+            let user = await userCollection.findOne({ 'userName': userName })
+            let todos = user.todos
+            let todo = description + `\nPlantas: ${plantsAlreadyOrdenated}`
+            todos.push({
+                title,
+                todo,
+                status: false
+            })
+            user.todos = todos
+            user.save()
+            emitNewTodo(io, userName, todos)
+            res.status(200).json({ done: true, user })
+        }else{
+            for(let i = 0; i < plants.length; i++){
+                let todo = description + `\nPlantas:`
+                let users = await userCollection.find({ 'section': plants[i].section })
+                for(let j = 0; j < plants[i].number.length; j++){
+                    todo += `\n${plants[i].number[j]}`
+                }        
+                for(let j = 0; j < users.length; j++){
+                    let todos = users[j].todos
+                    todos.push({
+                        title,
+                        todo,
+                        status: false
+                    })
+                    users[j].todos = todos
+                    users[j].save()
+                    emitNewTodo(io, users[j].userName, todos)
+                }
             }
+            res.status(200).json({ done: true })
         }
-        res.status(200).json({ done: true })
     }catch(e){
         res.status(200).json({ done: false })
     }
 })
 
 router.post('/completeTodo', tokenValidation, async (req,res)=> {
-    const {todoId, userName} = req.body 
-    console.log(req.body)       
+    const {todoId, userName} = req.body      
     const user = await userCollection.findOne({ "userName": userName })    
     let {todos} = user
     for(let i = 0; i < todos.length; i++){
@@ -207,12 +249,25 @@ router.post('/completeTodo', tokenValidation, async (req,res)=> {
     }    
     user.todos = todos
     user.save()
-    res.status(200).json({}) 
+    res.status(200).json({todos: user.todos}) 
+})
+
+router.post('/delete', tokenValidation, async (req,res)=> {
+    const { id } = req.body       
+    let user = await userCollection.findById(id)   
+    blobService.deleteBlobIfExists(containerName, user.photo.split('/')[4], (err, result) => {
+        if(err) {
+            res.sendStatus(500)
+            return;
+        }
+    })
+    await userCollection.findByIdAndRemove(id)
+    res.sendStatus(200)
 })
 
 router.post('/deleteTodo', tokenValidation, async (req,res)=> {
-    const {todoId, userName} = req.body 
-    console.log(req.body)       
+    const {todoId, userName} = req.body       
+    console.log(req.body)
     const user = await userCollection.findOne({ "userName": userName })    
     let {todos} = user    
     for(let i = 0; i < todos.length; i++){
