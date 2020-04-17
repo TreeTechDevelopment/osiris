@@ -20,11 +20,9 @@ const {
     deleteTodo,
     finisReading,
     createNewTodowMedia,
-    getOwners
 } = require('../routes-handler/user')
 
 router.get('/', tokenValidation, getUsers)
-router.get('/owner', tokenValidation, getOwners)
 
 router.post('/login', login)
 router.post('/updatewphoto', tokenValidation, upload.single('photo'), updateUserwPhoto)

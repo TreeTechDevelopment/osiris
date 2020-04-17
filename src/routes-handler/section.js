@@ -25,7 +25,7 @@ const getInfoSection = async (req, res) => {
     let plants = await plantCollection.find({ 'serialNumber': {$lte: finalP, $gte: initialP} })
     let employees = []
     for(let i = 0; i < section.employees.length; i++){
-        let employee = await userCollection.findOne({ 'userName': section.employees[i].userName })
+        let employee = await userCollection.findById(section.employees[i].idEmployee)
         employees.push(employee)
     }
     res.status(200).json({ plants, employees, section })

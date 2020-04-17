@@ -10,10 +10,7 @@ module.exports = (io) => {
 
         console.log('user connected', socket.id)  
 
-        socket.emit('connectedSuccesful', { data: 'a' })
-
-        socket.on('userConnected', async (data) => {
-
+        socket.emit('userConnected', (data) => {
             let index = users.findIndex( user => user.userName === data.userName )
 
             if(index >= 0){
@@ -24,12 +21,11 @@ module.exports = (io) => {
             }else{
                 users.push({
                     userName: data.userName,
-                    socketId: socket.id 
+                    socketId: socket.id  
                 })
             }
 
             console.log(users)
-            
         })
         
         socket.on('userConnectedToChat', getChat)

@@ -7,11 +7,6 @@ const chatCollection = require('../db/models/chatSchema');
 
 const {getBlobName, containerName, blobService, getFileUrl} = require('../azure')
 
-const getOwners = async (req,res)=> {
-    let users = await userCollection.find({ 'rol': 'owner' })    
-    res.status(200).json({ users })
-}
-
 const getUsers  = async (req,res)=> {
     const { rol, sections, section, rol2 } = req.query
     let users = []
@@ -19,12 +14,14 @@ const getUsers  = async (req,res)=> {
         let owners = await userCollection.find({ 'rol': rol2 })
         let employees = await userCollection.find({ 'rol': rol })
         res.status(200).json({ employees, owners })
+        return
     }
     if(section){ users = await userCollection.find({ 'rol': rol, 'section': section }) }
-    else{ users = await userCollection.find({ 'rol': rol })  }
+    else{ users = await userCollection.find({ 'rol': rol }) }
     if(sections){
         let sections = await sectionCollection.find()
         res.status(200).json({ users, sections }) 
+        return
     }    
     res.status(200).json({ users })
 }
@@ -142,7 +139,11 @@ const updatewoPhoto = async (req, res) => {
     let user = await userCollection.findById(id)
     if(user.rol === "employee"){
         let chat = await chatCollection.findOne({ 'from': user.userName })
+        let section = await sectionCollection.findOne({ 'sectionName': user.section })
+        let indexEmployeeInSection = section.employees.findIndex( employee => employee.idEmployee = id )
+        section.employees[indexEmployeeInSection].userName = userName
         chat.from = userName
+        section.save()
         chat.save()
     }if(user.rol === "manager"){
         let chats = await chatCollection.find({ 'to': user.userName })
@@ -204,7 +205,6 @@ const createNewTodo = async (req,res) => {
 
 const createNewTodowMedia = async (req,res) => {
     const files = req.files
-    console.log(req.body)
     let media = []
     for(let i = 0; i < files.length; i++){
         let blobName = getBlobName(files[i].originalname)
@@ -256,7 +256,6 @@ const createNewTodowMedia = async (req,res) => {
             res.status(200).json({ done: true })
         }
     }catch(e){
-        console.log(e)
         res.status(200).json({ done: false })
     }
 }
@@ -284,13 +283,16 @@ const deleteUser = async (req,res)=> {
             return;
         }
     })
+    let section = await sectionCollection.findOne({ 'sectionName': user.section })
+    let indexEmployeeInSection = section.employees.findIndex( employee => employee.idEmployee = id )
+    section.employees.splice(indexEmployeeInSection, 1)
+    section.save()
     await userCollection.findByIdAndRemove(id)
     res.sendStatus(200)
 }
 
 const deleteTodo = async (req,res)=> {
     const {todoId, userName} = req.body       
-    console.log(req.body)
     const user = await userCollection.findOne({ "userName": userName })    
     let {todos} = user    
     for(let i = 0; i < todos.length; i++){
@@ -340,6 +342,5 @@ module.exports = {
     deleteUser,
     deleteTodo,
     finisReading,
-    createNewTodowMedia,
-    getOwners
+    createNewTodowMedia
 }
