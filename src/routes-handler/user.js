@@ -7,6 +7,10 @@ const chatCollection = require('../db/models/chatSchema');
 
 const {getBlobName, containerName, blobService, getFileUrl} = require('../azure')
 
+const getOwners = async (req,res)=> {
+    let users = await userCollection.find({ 'rol': 'owner' })    
+    res.status(200).json({ users })
+}
 
 const getUsers  = async (req,res)=> {
     const { rol, sections, section, rol2 } = req.query
@@ -336,5 +340,6 @@ module.exports = {
     deleteUser,
     deleteTodo,
     finisReading,
-    createNewTodowMedia
+    createNewTodowMedia,
+    getOwners
 }
