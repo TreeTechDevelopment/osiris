@@ -22,8 +22,7 @@ app.use(bodyParser.json())
 const server = require('http').createServer(app)
 
 const io = require('socket.io').listen(server); 
-require('./src/sockets/chatSocket')(io)
-require('./src/sockets/userSocket').socketFunction(io)
+require('./src/sockets/socket')(io)
 
 app.use('/user', userRoutes)
 app.use('/plant', tokenValidation, plantRoutes) 
@@ -33,5 +32,3 @@ app.use('/section', tokenValidation, sectionRoutes)
 server.listen(PORT, () => {
     console.log(`server on port ${PORT}`)
 }) 
-
-module.exports = {io}

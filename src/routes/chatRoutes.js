@@ -2,11 +2,10 @@ const express = require('express');
 
 const router = express.Router()
 
-const chatCollection = require('../db/models/chatSchema');
+const {
+    getChats
+} = require('../routes-handler/chat')
 
-router.get('/', async (req, res) => {
-    let chats = await chatCollection.find()
-    res.status(200).json({ chats })
-})
+router.get('/', getChats)
 
 module.exports = router

@@ -1,146 +1,86 @@
 const userCollection = require('../db/models/userSchema');
 const chatCollection = require('../db/models/chatSchema');
 
-module.exports = (io) => {
+const getChat = async (data, callback) => {
 
-    let users = []      
+    let chat = {}
 
-    io.on('connection', (socket) => {
+    if(data.chatFrom){ chat = await chatCollection.findOne({ 'from': data.chatFrom}) }        
+    else{ chat = await chatCollection.findOne({ 'from': data.userName}) }
 
-        console.log('user connected', socket.id)        
-        socket.emit('connection', 'connected')
+    callback(chat)
+}
 
-        socket.on('userConnected', async (data, callback) => {
-            for(let i = 0; i < users.length; i++){
-                if(users[i].userName === data.userName){
-                    users[i].socketId = socket.id
-                    let chat = {}
-                    if(data.chatFrom){ chat = await chatCollection.findOne({ 'from': data.chatFrom})  }
-                    else{ chat = await chatCollection.findOne({ 'from': data.userName}) }
-                    callback(chat)
-                    console.log(users)
-                    return
-                }
-            }
-            users.push({
-                userName: data.userName,
-                socketId: socket.id 
-            })
-            console.log(users)
-            let chat = {}
-            if(data.chatFrom){ chat = await chatCollection.findOne({ 'from': data.chatFrom})  }
-            else{ chat = await chatCollection.findOne({ 'from': data.userName}) }
-            callback(chat)            
-        })  
+const messageToManager = async (data , users, io) => { 
 
-        socket.on('messageFromManager', async (data) => { 
-            let chat = await chatCollection.findOne({ 'from': data.from})                         
-            let managerId = null
-            let employeeId = null                        
-            for(let i = 0; i < users.length; i++ ){
-                if(users[i].userName === data.userName){
-                    managerId = users[i].socketId
-                }
-                if(users[i].userName === data.from){
-                    employeeId = users[i].socketId
-                }
-            }                     
-            if(employeeId){                
-                io.to(`${employeeId}`).emit('newMessage', data)                
-                let chatCreated = chat.chat
-                chatCreated.push({ 
-                    date: data.date,
-                    message: data.message,
-                    userName: data.userName                       
-                })   
-                chat.chat =  chatCreated
-                chat.save()
-                io.to(`${managerId}`).emit('newMessage', chat.chat)
-            }else{                                
-                let chatCreated = chat.chat
-                chatCreated.push({ 
-                    date: data.date,
-                    message: data.message,
-                    userName: data.userName
-                })   
-                chat.chat =  chatCreated 
-                chat.save()
-                io.to(`${managerId}`).emit('newMessage', chat.chat)                
-            }
+    let chatToSend =[]
+    let chat = await chatCollection.findOne({ 'from': data.userName})    
+    const manager = await userCollection.findOne({ 'rol': 'manager' })         
+    let managerId = null
+    let employeeId = null          
+    
+    let idx = users.findIndex( user => user.userName === manager.userName )
+    if(idx >= 0){ managerId = users[idx].socketId }
+
+    idx = users.findIndex( user => user.userName === data.userName )
+    if(idx >= 0){ employeeId = users[idx].socketId }
+
+    if(chat){                    
+        let chatCreated = chat.chat
+        chatCreated.push({ 
+            date: data.date,
+            message: data.message,
+            userName: data.userName                       
+        })   
+        chat.chat =  chatCreated
+        chatToSend = chatCreated
+        chat.save()
+    }else{
+        let newChat = new chatCollection({
+            from: data.userName,
+            to: manager.userName,
+            chat: [{ 
+                date: data.date,
+                message: data.message,
+                userName: data.userName                       
+            }]
         })         
-        
-        socket.on('messageToManager', async (data) => { 
-            let chat = await chatCollection.findOne({ 'from': data.userName})    
-            const manager = await userCollection.findOne({ 'rol': 'manager' })         
-            let managerId = null
-            let employeeId = null            
-        
-            for(let i = 0; i < users.length; i++ ){
-                if(users[i].userName === manager.userName){
-                    managerId = users[i].socketId
-                }
-                if(users[i].userName === data.userName){
-                    employeeId = users[i].socketId
-                }
-            }                        
-            if(managerId){
-                io.to(`${managerId}`).emit('newMessage', data)
-                io.to(`${employeeId}`).emit('newMessage', data)                
-                if(chat){                    
-                    let chatCreated = chat.chat
-                    chatCreated.push({ 
-                        date: data.date,
-                        message: data.message,
-                        userName: data.userName                       
-                    })   
-                    chat.chat =  chatCreated
-                    chat.save()                   
-                }else{
-                    let newChta = new chatCollection({
-                        from: data.userName,
-                        to: manager.userName,
-                        chat: [{ 
-                            date: data.date,
-                            message: data.message,
-                            userName: data.userName                       
-                        }]
-                    })                    
-                    newChta.save()
-                }
-            }else{
-                io.to(`${employeeId}`).emit('newMessage', data)                
-                if(chat){
-                    let chatCreated = chat.chat
-                    chatCreated.push({ 
-                        date: data.date,
-                        message: data.message,
-                        userName: data.userName                       
-                    })   
-                    chat.chat =  chatCreated
-                    chat.save()                
-                }else{
-                    let newChat = new chatCollection({
-                        from: data.userName,
-                        to: manager.userName,
-                        chat: [{ 
-                            date: data.date,
-                            message: data.message,
-                            userName: data.userName                       
-                        }]
-                    })
-                    newChat.save()
-                }
-            }
-        })
+        chatToSend = newChat.chat
+        newChat.save()
+    }
+    io.to(`${employeeId}`).emit('newMessage', chatToSend) 
+    if(managerId){ io.to(`${managerId}`).emit('newMessage', chatToSend) }
 
-        socket.on('disconnect' , () => {
-            console.log('disconnected')
-            for(let i = 0; i < users.length; i++){
-                if(users[i].socketId = socket.id){
-                    users.splice(i,1)
-                }
-            }
-            console.log(users)
-        })
-    })
+}
+
+const messageFromManager = async (data, users, io) => { 
+
+    let chat = await chatCollection.findOne({ 'from': data.from})                         
+    let managerId = null
+    let employeeId = null 
+
+    let idx = users.findIndex( user => user.userName === data.userName )
+    if(idx >= 0){ managerId = users[idx].socketId }
+
+    idx = users.findIndex( user => user.userName === data.from )
+    if(idx >= 0){ employeeId = users[idx].socketId }
+
+    let chatCreated = chat.chat
+    chatCreated.push({ 
+        date: data.date,
+        message: data.message,
+        userName: data.userName                       
+    })   
+    chat.chat =  chatCreated
+    chat.save()
+
+    io.to(`${managerId}`).emit('newMessage', chatCreated)
+    if(employeeId){ io.to(`${employeeId}`).emit('newMessage', chatCreated) }
+
+}
+
+module.exports = {
+    getChat,
+    messageToManager,
+    messageFromManager
 }

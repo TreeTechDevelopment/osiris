@@ -10,7 +10,10 @@ const userSchema = Schema({
     todos: [{
         title: String,
         todo: String,
-        status: Boolean        
+        status: Boolean,
+        imgs: [{
+            uri: String
+        }]
     }],
     reads: [{
         lat: String,

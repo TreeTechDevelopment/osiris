@@ -8,10 +8,13 @@ const mongoose = require('mongoose');
 //const PDFDocument = require('pdfkit');
 
 
-const Collection = require('./models/plantSchema')
+const Collection = require('./models/chatSchema')
 
 mongoose.connect(process.env.DB, {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false})
     .then(async (db) => {
-        console.log('DB connected')        
+        console.log('DB connected') 
+        /* let chat = await Collection.findOne({ 'from' : 'Empleado 1'})       
+        chat.chat = []
+        chat.save() */
     }) 
     .catch((err) => {console.log(err)}) 
