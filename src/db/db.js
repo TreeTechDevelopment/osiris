@@ -7,10 +7,7 @@ const mongoose = require('mongoose');
 //const brandedQRCode = require('branded-qr-code')
 //const PDFDocument = require('pdfkit');
 
-const moment = require('moment');
 const Collection = require('./models/userSchema')
-
-const { missingPlantsFormatted } = require('../helpers')
 
 mongoose.connect(process.env.DB, {
     useNewUrlParser: true, 
@@ -61,6 +58,5 @@ mongoose.connect(process.env.DB, {
         /* try{
             console.log(moment('2020-04-21').isBetween('2020-03-21', '2020-05-21'))
         }catch(e){ console.log("error") } */
-        console.log(missingPlantsFormatted(['0001','2003','0003','2000', '0100', '0002', '2001', '2002', '0004']))
     }) 
     .catch((err) => {console.log(err)}) 
