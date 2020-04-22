@@ -20,19 +20,23 @@ const {
     deleteTodo,
     finisReading,
     createNewTodowMedia,
+    getTemperature
 } = require('../routes-handler/user')
 
 router.get('/', tokenValidation, getUsers)
+router.get('/temperature', tokenValidation, getTemperature)
 
 router.post('/login', login)
-router.post('/updatewphoto', tokenValidation, upload.single('photo'), updateUserwPhoto)
 router.post('/create', tokenValidation, upload.single('photo'), createUser)
-router.post('/update', tokenValidation, updatewoPhoto)
 router.post('/newTask', tokenValidation, createNewTodo)
 router.post('/newTaskwMedia', tokenValidation, upload.array('todo', 4), createNewTodowMedia)
-router.post('/completeTodo', tokenValidation, completeTodo)
-router.post('/delete', tokenValidation, deleteUser)
-router.post('/deleteTodo', tokenValidation, deleteTodo)
-router.post('/finishReading/', tokenValidation, finisReading)
+
+router.put('/updatewphoto', tokenValidation, upload.single('photo'), updateUserwPhoto)
+router.put('/update', tokenValidation, updatewoPhoto)
+router.put('/completeTodo', tokenValidation, completeTodo)
+router.put('/finishReading', tokenValidation, finisReading)
+
+router.delete('/delete', tokenValidation, deleteUser)
+router.delete('/deleteTodo', tokenValidation, deleteTodo)
 
 module.exports = router

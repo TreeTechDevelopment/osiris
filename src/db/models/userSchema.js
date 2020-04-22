@@ -4,8 +4,19 @@ const bcrypt = require('bcrypt')
 const Schema = mongoose.Schema;
 
 const userSchema = Schema({
-    rol: String,
-    userName: String,
+    rol: {
+        type: String,
+        enum: [
+            'admin',
+            'manager',
+            'owner',
+            'employee'
+        ]
+    },
+    userName: {
+        type: String,
+        unique: true
+    },
     password: String,
     todos: [{
         title: String,
@@ -16,14 +27,14 @@ const userSchema = Schema({
         }]
     }],
     reads: [{
-        lat: String,
-        lng: String,
-        date: String
+        lat: Number,
+        lng: Number
     }],
     readToday: Boolean,
     section: String,
     name: String,
     plants: String,
+    missingPlants: String,
     meanReads: Number,
     photo: String,
     address: String

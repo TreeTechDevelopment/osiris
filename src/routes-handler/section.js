@@ -33,8 +33,10 @@ const getInfoSection = async (req, res) => {
 
 const updateSection = async (req, res) => {    
     const { numberSection, coordinates, nameSections, employees, plants, owners } = req.body
-    let sections = await sectionCollection.deleteMany()
+    console.log(coordinates)
+    console.log(req.body)
     let sectionsCreated = []
+    await sectionCollection.deleteMany()
     for(let i = 0; i < numberSection; i++){
         let finalNumber = plants[i].split('-')[1]
         let initialNumber = plants[i].split('-')[0]
@@ -51,17 +53,18 @@ const updateSection = async (req, res) => {
         if(ini >= 100){ initialN = `0${ini}` }
         if(ini >= 1000){ initialN = `${ini}` }
         await plantCollection.updateMany({ 'serialNumber': {$lte: finalN, $gte: initialN} }, { section: nameSections[i] })
+        coordinates[i].forEach((coordinate) => { delete coordinate._id })
         let newSection = new sectionCollection({
             sectionName: nameSections[i],
             coordinates: coordinates[i],
             employees: employees[i],
             plants: plants[i],
-            owners: owners[i]
+            owner: owners[i]
         })
         newSection.save()
         sectionsCreated.push(newSection)
         for(let j = 0; j < employees[i].length; j++){
-            let employee = await userCollection.findOne({ 'userName': employees[i][j].userName })
+            let employee = await userCollection.findById(employees[i][j].idEmployee)
             employee.section = nameSections[i]
             employee.save()
         }

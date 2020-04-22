@@ -1,4 +1,5 @@
 const getStream = require('into-stream');
+const moment = require('moment')
 
 const {getBlobName, containerName, blobService, getFileUrl} = require('../azure')
 
@@ -93,13 +94,15 @@ const getPlantBySection = async (req,res) => {
 const updatePlant = async (req, res) => {    
     const { id, name, width, height, numberFruits, temperature, type, date, plantedDate } = req.body.newPlant    
     let plant = await plantCollection.findById(id)     
+    updateDate = moment(date).format('DD MM YYYY')
+
     plant.name = name 
     plant.width = width
     plant.height = height
     plant.temperature = temperature
     plant.numberFruits = numberFruits
     plant.type = type
-    plant.lastUpdate = date
+    plant.lastUpdate = updateDate.replace(/\s/g, '/')
     plant.plantedDate = plantedDate
     plant.save()
     res.status(200).json({plant})
@@ -120,7 +123,7 @@ const deleteReport = async (req,res) => {
     plant.report= {}
     plant.imagesReport= []
     plant.save()
-    let plants = plantCollection.find({ statusReported: true })    
+    let plants = await plantCollection.find({ statusReported: true })    
     res.status(200).json({ deleted: true, plants })
 }
 
@@ -152,7 +155,7 @@ const reportPlant = async (req, res) => {
         plant.save()
         res.status(200).json({ reported: true })
     }catch(e){        
-        res.status(200).json({ reported: false })
+        res.sendStatus(500)
     }
 }
 

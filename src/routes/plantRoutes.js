@@ -20,8 +20,11 @@ router.get('/reports', getPLantsReported)
 router.get('/specific', getSpecificPlant)
 router.get('/section', getPlantBySection)
 
-router.post('/', updatePlant)
-router.post('/deleteReport', deleteReport)
 router.post('/report',upload.array('reports', 3), reportPlant )
+
+router.put('/', updatePlant)
+
+router.delete('/deleteReport', deleteReport)
+
 
 module.exports = router 

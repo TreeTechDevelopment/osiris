@@ -1,29 +1,37 @@
 const jwt = require('jsonwebtoken');
 const getStream = require('into-stream');
+const moment = require('moment');
 
 const userCollection = require('../db/models/userSchema');
 const sectionCollection = require('../db/models/sectionsSchema');
+const plantCollection = require('../db/models/plantSchema');
 const chatCollection = require('../db/models/chatSchema');
 
 const {getBlobName, containerName, blobService, getFileUrl} = require('../azure')
 
+const { numberToSerialNumber } = require('../helpers');
+
 const getUsers  = async (req,res)=> {
-    const { rol, sections, section, rol2 } = req.query
-    let users = []
-    if(rol2){
-        let owners = await userCollection.find({ 'rol': rol2 })
-        let employees = await userCollection.find({ 'rol': rol })
-        res.status(200).json({ employees, owners })
-        return
+    try{
+        const { rol, sections, section, rol2 } = req.query
+        let users = []
+        if(rol2){
+            let owners = await userCollection.find({ 'rol': rol2 }, 'name userName rol')
+            let employees = await userCollection.find({ 'rol': rol }, 'name userName rol plants section')
+            res.json({ employees, owners })
+            return
+        }
+        if(section){ users = await userCollection.find({ 'rol': rol, 'section': section }, 'sectionName name userName rol') }
+        else{ users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos') }
+        if(sections){
+            let sections = await sectionCollection.find({})
+            res.status(200).json({ users, sections }) 
+            return
+        }    
+        res.json({ users })
+    }catch(e){
+        res.sendStatus(500)
     }
-    if(section){ users = await userCollection.find({ 'rol': rol, 'section': section }) }
-    else{ users = await userCollection.find({ 'rol': rol }) }
-    if(sections){
-        let sections = await sectionCollection.find()
-        res.status(200).json({ users, sections }) 
-        return
-    }    
-    res.status(200).json({ users })
 }
 
 const login = async (req, res) => {
@@ -33,132 +41,165 @@ const login = async (req, res) => {
     let user = await userCollection.findOne({"userName": userName}) 
     if(user){
         if(user.validPassword(password)){ 
-            if(user.rol === "employee"){                
-                res.status(200).json({ logged: true, user: {userName, rol: user.rol, todos:user.todos, plants: user.plants}, token }) 
+            if(user.rol === "employee"){
+                let userResponse = {
+                    userName, 
+                    rol: user.rol, 
+                    todos:user.todos, 
+                    plants: user.plants, 
+                    id: user._id, 
+                    missingPlants: user.missingPlants
+                }
+                res.json({ logged: true, user: userResponse, token }) 
             }if(user.rol === "manager"){                
-                res.status(200).json({ logged: true, user: {userName, rol: user.rol }, token }) 
+                res.json({ logged: true, user: {userName, rol: user.rol, id: user._id }, token }) 
             }if(user.rol === "admin"){                
-                res.status(200).json({ logged: true, user: {userName, rol: user.rol }, token }) 
-            }     
+                res.json({ logged: true, user: {userName, rol: user.rol, id: user._id }, token }) 
+            }if(user.rol === "owner"){                
+                res.json({ logged: true, user: {userName, rol: user.rol, id: user._id }, token }) 
+            }
         }
         else{ res.status(200).json({ logged: false, user: {} }) }
     }else{
-        res.status(200).json({ logged: false, user: {}})
+        res.json({ logged: false, user: {}})
     }
 }
 
 const updateUserwPhoto = async (req, res) => {
-    let { file } = req
-    let { id, userName, name, address, section } = req.body
-    let user = await userCollection.findById(id)
-    let blobName = ''
-    if(user.photo.split('/')[4]){
-        blobService.deleteBlobIfExists(containerName, user.photo.split('/')[4], (err, result) => {
-            if(err) {
-                res.sendStatus(500)
-                return;
-            }
-        })
-        blobName = getBlobName(file.originalname)
-        let stream = getStream(file.buffer)
-        let streamLength = file.buffer.length
-        blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
-            if(err) {
-                res.sendStatus(500)
-                return;
-            }
-        });
-    }else{
-        blobName = getBlobName(file.originalname)
-        let stream = getStream(file.buffer)
-        let streamLength = file.buffer.length
-        blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
-            if(err) {
-                res.sendStatus(500)
-                return;
-            }
-    
-        });
+    try{
+        let { file } = req
+        let { id, userName, name, address, section } = req.body
+        let user = await userCollection.findById(id)
+        let blobName = ''
+        if(user.photo.split('/')[4]){
+            blobService.deleteBlobIfExists(containerName, user.photo.split('/')[4], (err, result) => {
+                if(err) {
+                    res.sendStatus(500)
+                    return;
+                }
+            })
+            blobName = getBlobName(file.originalname)
+            let stream = getStream(file.buffer)
+            let streamLength = file.buffer.length
+            blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
+                if(err) {
+                    res.sendStatus(500)
+                    return;
+                }
+            });
+        }else{
+            blobName = getBlobName(file.originalname)
+            let stream = getStream(file.buffer)
+            let streamLength = file.buffer.length
+            blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
+                if(err) {
+                    res.sendStatus(500)
+                    return;
+                }
+        
+            });
+        }
+        user.userName = userName
+        user.name = name
+        user.photo = getFileUrl(blobName)
+        user.address = address
+        if(section){ user.section = section }
+        user.save()
+        delete user.password
+        res.json({ user })
+    }catch(e){
+        res.sendStatus(500)
     }
-    user.userName = userName
-    user.name = name
-    user.photo = getFileUrl(blobName)
-    user.address = address
-    if(section){ user.section = section }
-    user.save()
-    res.status(200).json({ user })
 }
 
 const createUser = async (req, res) => {
 
-    let { file } = req
-    let { userName, name, address, section, plants, password, rol, sections } = req.body
+    try{
+        let { file } = req
+        let { userName, name, address, section, plants, password, rol, sections } = req.body
 
-    let blobName = getBlobName(file.originalname)
-    let stream = getStream(file.buffer)
-    let streamLength = file.buffer.length
-    blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
-        if(err) {
-            res.sendStatus(500)
-            return;
+        let newUser = {
+            userName,
+            name, 
+            address,
+            rol
         }
 
-    });
-
-    let newUser = {
-        userName,
-        name, 
-        address,
-        photo: getFileUrl(blobName),
-        rol
-    }
-
-    if(rol === 'employee'){
-        newUser.plants = plants
-        newUser.section = section
-    }
-
-    if(rol === 'owner'){
-        for(let i = 0; i < sections.length; i++){
-            let section = await sectionCollection.findOne({ 'sectionName': sections[i] })
-            section.owner = userName
-            section.save()
+        if(rol === 'employee'){
+            let plantFrom = numberToSerialNumber(plants.split('-')[0])
+            let plantTo = numberToSerialNumber(plants.split('-')[1])
+            newUser.plants = `${plantFrom}-${plantTo}`
+            newUser.missingPlants = `${plantFrom}-${plantTo}`
+            newUser.section = section
         }
+
+        let user = new userCollection(newUser)
+
+        let passwordHashed = user.generateHash(password)
+        user.password = passwordHashed
+
+        user.save(async (err, newUser) => {
+            if(err){
+                return res.status(400).send('Ya existe algún empleado con el mismo usuario. Este dato tiene que ser único.')
+            }
+            let blobName = getBlobName(file.originalname)
+            let stream = getStream(file.buffer)
+            let streamLength = file.buffer.length
+            blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
+                if(err) {
+                    res.sendStatus(500)
+                    return;
+                }
+
+            });
+
+            if(rol === 'owner'){
+                for(let i = 0; i < sections.length; i++){
+                    let section = await sectionCollection.findOne({ 'sectionName': sections[i] })
+                    section.owner = userName
+                    section.save()
+                }
+            }
+
+            newUser.photo = getFileUrl(blobName)
+            newUser.save()
+            
+            delete newUser.password
+            res.status(200).json({ user: newUser })
+        })
+
+    }catch(e){
+        res.sendStatus(500)
     }
 
-    let user = new userCollection(newUser)
-    let passwordHashed = user.generateHash(password)
-    user.password = passwordHashed
-    user.save()
-    
-    res.status(200).json({ user })
 }
 
 const updatewoPhoto = async (req, res) => {
-    let { id, userName, name, address, section, plants } = req.body
-    let user = await userCollection.findById(id)
-    if(user.rol === "employee"){
-        let chat = await chatCollection.findOne({ 'from': user.userName })
-        let section = await sectionCollection.findOne({ 'sectionName': user.section })
-        let indexEmployeeInSection = section.employees.findIndex( employee => employee.idEmployee = id )
-        section.employees[indexEmployeeInSection].userName = userName
-        chat.from = userName
-        section.save()
-        chat.save()
-    }if(user.rol === "manager"){
-        let chats = await chatCollection.find({ 'to': user.userName })
-        for(let i = 0; i < chats.length; i++){
-            chats[i].to = userName
-            chats[i].save()
+    try{
+        let { id, userName, name, address, section, plants } = req.body
+        let user = await userCollection.findById(id)
+        if(user.rol === "employee"){
+            let chat = await chatCollection.findOne({ 'from': user.userName })
+            chat.from = userName
+            chat.save()
+        }if(user.rol === "manager"){
+            let chats = await chatCollection.find({ 'to': user.userName })
+            for(let i = 0; i < chats.length; i++){
+                chats[i].to = userName
+                chats[i].save()
+            }
         }
+        user.userName = userName
+        user.name = name
+        user.address = address
+        if(section){ user.section = section }
+        if(plants){ user.plants = plants }
+        user.save()
+        delete user.password
+        res.status(200).json({ user })
+    }catch(e){
+        res.sendStatus(500)
     }
-    user.userName = userName
-    user.name = name
-    user.address = address
-    if(section){ user.section = section }
-    if(plants){ user.plants = plants }
-    user.save()
-    res.status(200).json({ user })
 }
 
 const createNewTodo = async (req,res) => {
@@ -175,7 +216,6 @@ const createNewTodo = async (req,res) => {
                 status: false
             })
             user.save()
-            emitNewTodo(io, userName, todos)
             res.status(200).json({ done: true, user })
         }else{
             for(let i = 0; i < plants.length; i++){
@@ -193,13 +233,12 @@ const createNewTodo = async (req,res) => {
                     })
                     users[j].todos = todos
                     users[j].save()
-                    emitNewTodo(io, users[j].userName, todos)
                 }
             }
             res.status(200).json({ done: true })
         }
     }catch(e){
-        res.status(200).json({ done: false })
+        res.sendStatus(500)
     }
 }
 
@@ -261,74 +300,88 @@ const createNewTodowMedia = async (req,res) => {
 }
 
 const completeTodo = async (req,res)=> {
-    const {todoId, userName} = req.body      
-    const user = await userCollection.findOne({ "userName": userName })    
-    let {todos} = user
-    for(let i = 0; i < todos.length; i++){
-        if(todos[i].id === todoId){ 
-            todos[i].status = true
-        }
-    }    
-    user.todos = todos
-    user.save()
-    res.status(200).json({todos: user.todos}) 
+    try{
+        const {todoId, userName} = req.body      
+        const user = await userCollection.findOne({ "userName": userName })    
+        let {todos} = user
+        for(let i = 0; i < todos.length; i++){
+            if(todos[i].id === todoId){ 
+                todos[i].status = true
+            }
+        }    
+        user.todos = todos
+        user.save()
+        res.json({todos: user.todos})
+    }catch(e){
+        res.sendStatus(500)
+    }
 }
 
 const deleteUser = async (req,res)=> {
-    const { id } = req.body       
-    let user = await userCollection.findById(id)   
-    blobService.deleteBlobIfExists(containerName, user.photo.split('/')[4], (err, result) => {
-        if(err) {
-            res.sendStatus(500)
-            return;
-        }
-    })
-    let section = await sectionCollection.findOne({ 'sectionName': user.section })
-    let indexEmployeeInSection = section.employees.findIndex( employee => employee.idEmployee = id )
-    section.employees.splice(indexEmployeeInSection, 1)
-    section.save()
-    await userCollection.findByIdAndRemove(id)
-    res.sendStatus(200)
+    try{
+        const { id } = req.body       
+        let user = await userCollection.findById(id)   
+        blobService.deleteBlobIfExists(containerName, user.photo.split('/')[4], (err, result) => {
+            if(err) {
+                res.sendStatus(500)
+                return; 
+            }
+        })
+        let section = await sectionCollection.findOne({ 'sectionName': user.section })
+        let indexEmployeeInSection = section.employees.findIndex( employee => employee.idEmployee = id )
+        section.employees.splice(indexEmployeeInSection, 1)
+        section.save()
+        await userCollection.findByIdAndRemove(id)
+        res.sendStatus(200)
+    }catch(e){
+        res.sendStatus(500)
+    }
 }
 
 const deleteTodo = async (req,res)=> {
-    const {todoId, userName} = req.body       
-    const user = await userCollection.findOne({ "userName": userName })    
-    let {todos} = user    
-    for(let i = 0; i < todos.length; i++){
-        if(todos[i].id === todoId){
-            todos.splice(i,1)             
-        }
-    } 
-    user.todos = todos       
-    user.save()
-    res.status(200).json({user}) 
+    try{
+        const {todoId, userName} = req.body       
+        const user = await userCollection.findOne({ "userName": userName })    
+        let {todos} = user
+        let index = todos.findIndex( todo => todo._id === todoId )
+        todos.splice(index,1)
+        user.todos = todos       
+        user.save()
+        delete user.password
+        res.status(200).json({user}) 
+    }catch(e){
+        res.sendStatus(500)
+    }
+    
 }
 
 const finisReading = async (req, res) => {
-    const {reads, userName} = req.body
-    const user = await userCollection.findOne({ "userName": userName })
-    let newReads = user.reads    
-    let mean = 0
-    for(let i = 0; i < reads.length - 1; i++){
-        newReads.push(reads[i])
-        let time1 = reads[i].date.split(' ')[4]
-        let time2 = reads[i + 1].date.split(' ')[4]
-        let hour1 = time1.split(':')[0]
-        let hour2 = time2.split(':')[0]
-        let minute1 = time1.split(':')[1]
-        let minute2 = time2.split(':')[1]
-        if(hour1 === hour2){
-            mean += parseInt(minute2) - parseInt(minute1)
-        }else{
-            mean += parseInt(minute2) - 60 - parseInt(minute1)
+    try{
+        const {reads, userName, dateStarted, dateFinished} = req.body
+        let user = await userCollection.findOne({ "userName": userName })
+        let mean = (dateFinished - dateStarted) / reads.length
+        for(let i = 0; i < reads.length; i++){
+            let plant = await plantCollection.findById(reads[i].plantId)
+            let date = moment(reads[i].date).format('DD MM YYYY')
+            plant.lastUpdate = date.replace(/\s/g, '/')
+            plant.save()
         }
+        mean = mean / 60000
+        user.reads = reads
+        user.meanReads = Number(mean.toFixed(2))
+        user.save() 
+        res.status(200).json({})
+    }catch(e){
+        res.sendStatus(500)
     }
-    mean = mean / ( reads.length - 1 )
-    user.reads = newReads
-    user.meanReads = mean
-    user.save() 
-    res.status(200).json({})
+}
+
+const getTemperature = async (req, res) => {
+    try{
+        let user = await userCollection.findById(req.query.userId)
+        let section = await sectionCollection.findOne({ 'sectionName': user.section })
+        res.json({ temperature: section.temperature })
+    }catch(e){ res.sendStatus(500) }
 }
 
 module.exports = {
@@ -342,5 +395,6 @@ module.exports = {
     deleteUser,
     deleteTodo,
     finisReading,
-    createNewTodowMedia
+    createNewTodowMedia,
+    getTemperature
 }
