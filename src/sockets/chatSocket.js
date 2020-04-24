@@ -33,7 +33,11 @@ const messageToManager = async (data , users, io) => {
             userName: data.userName                       
         })   
         chat.chat =  chatCreated
-        chatToSend = chatCreated
+        chatToSend = { 
+            date: data.date,
+            message: data.message,
+            userName: data.userName                       
+        }
         chat.save()
     }else{
         let newChat = new chatCollection({
@@ -45,7 +49,11 @@ const messageToManager = async (data , users, io) => {
                 userName: data.userName                       
             }]
         })         
-        chatToSend = newChat.chat
+        chatToSend = { 
+            date: data.date,
+            message: data.message,
+            userName: data.userName                       
+        }
         newChat.save()
     }
     io.to(`${employeeId}`).emit('newMessage', chatToSend) 
@@ -74,8 +82,8 @@ const messageFromManager = async (data, users, io) => {
     chat.chat =  chatCreated
     chat.save()
 
-    io.to(`${managerId}`).emit('newMessage', chatCreated)
-    if(employeeId){ io.to(`${employeeId}`).emit('newMessage', chatCreated) }
+    io.to(`${managerId}`).emit('newMessage', data)
+    if(employeeId){ io.to(`${employeeId}`).emit('newMessage', data) }
 
 }
 

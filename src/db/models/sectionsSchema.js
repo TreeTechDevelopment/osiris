@@ -9,9 +9,7 @@ const sections = Schema({
     },
     coordinates: [{
         latitude: Number,
-        longitude: Number,
-        id: Number,
-        uniqueId: Number
+        longitude: Number
     }],
     employees: [{
         idEmployee: String

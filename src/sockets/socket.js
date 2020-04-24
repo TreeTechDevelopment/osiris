@@ -1,6 +1,6 @@
 
 const { getChat, messageToManager, messageFromManager } = require('./chatSocket')
-const { newTodo } = require('./userSocket')
+const { newTodo, alertPosition } = require('./userSocket')
 
 module.exports = (io) => {
 
@@ -30,11 +30,31 @@ module.exports = (io) => {
         
         socket.on('userConnectedToChat', getChat)
 
-        socket.on('messageFromManager', async (data) => { messageFromManager(data, users, io) })         
-        
-        socket.on('messageToManager', async (data) => { messageToManager(data, users, io) })
+        socket.on('userConnectDevelopment', (data) => {
+            let index = users.findIndex( user => user.userName === data.userName )
 
-        socket.on('newTodo', async (data) => { newTodo(data, users, io) })
+            if(index >= 0){
+                users[index] = {
+                    userName: data.userName,
+                    socketId: socket.id 
+                }
+            }else{
+                users.push({
+                    userName: data.userName,
+                    socketId: socket.id  
+                })
+            }
+
+            console.log(users)
+        })
+
+        socket.on('messageFromManager', (data) => { messageFromManager(data, users, io) })         
+        
+        socket.on('messageToManager', (data) => { messageToManager(data, users, io) })
+
+        socket.on('newTodo', (data) => { newTodo(data, users, io) })
+
+        socket.on('alertPosition', (data) => { alertPosition(data, users, io) })
 
         socket.on('disconnect' , () => {
             console.log('disconnected')

@@ -21,7 +21,7 @@ const getUsers  = async (req,res)=> {
             res.json({ employees, owners })
             return
         }
-        if(section){ users = await userCollection.find({ 'rol': rol, 'section': section }, 'sectionName name userName rol') }
+        if(section){ users = await userCollection.find({ 'rol': rol, 'section': section }, 'sectionName name userName rol todos') }
         else{ users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos') }
         if(sections){
             let sections = await sectionCollection.find({})
@@ -30,32 +30,40 @@ const getUsers  = async (req,res)=> {
         }    
         res.json({ users })
     }catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
 }
 
 const login = async (req, res) => {
-    const { userName, password } = req.body
-    let token = jwt.sign({ userName }, 'OSIRIS-KEY' , { expiresIn: 60 * 60 * 24 });
-    token = `OSIRIS-${token}`    
-    let user = await userCollection.findOne({"userName": userName}) 
+    const { userName, password } = req.body 
+    let user = await userCollection.findOne({"userName": userName})   
     if(user){
         if(user.validPassword(password)){ 
+            const payload= {
+                userName,
+                rol: user.rol,
+                _id: user._id
+            }
+            let token = jwt.sign(payload, process.env.JWT_SEED , { expiresIn: 60 * 60 * 24 });
+            token = `${process.env.TOKEN_HEADER} ${token}`
             if(user.rol === "employee"){
+                let section = await sectionCollection.findOne({ 'sectionName': user.section })
                 let userResponse = {
                     userName, 
                     rol: user.rol, 
                     todos:user.todos, 
                     plants: user.plants, 
                     id: user._id, 
-                    missingPlants: user.missingPlants
+                    missingPlants: user.missingPlants,
+                    section: section.coordinates
                 }
                 res.json({ logged: true, user: userResponse, token }) 
-            }if(user.rol === "manager"){                
+            }else if(user.rol === "manager"){                
                 res.json({ logged: true, user: {userName, rol: user.rol, id: user._id }, token }) 
-            }if(user.rol === "admin"){                
+            }else if(user.rol === "admin"){                
                 res.json({ logged: true, user: {userName, rol: user.rol, id: user._id }, token }) 
-            }if(user.rol === "owner"){                
+            }else if(user.rol === "owner"){                
                 res.json({ logged: true, user: {userName, rol: user.rol, id: user._id }, token }) 
             }
         }

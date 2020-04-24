@@ -3,10 +3,15 @@ const jwt = require('jsonwebtoken');
 function tokenValidation(req, res, next){    
     if(req.headers['authorization']){        
         let header = req.headers['authorization']
-        let token = header.split('-')
-        if(token[0] === 'OSIRIS'){            
-            req.token = token[1] 
-            next()
+        let headerToken = header.split(' ')
+        if(headerToken[0] === process.env.TOKEN_HEADER){            
+            let token = headerToken[1] 
+            jwt.verify(token, process.env.JWT_SEED, (err) => {
+                if(err){
+                    return res.sendStatus(403)
+                }
+                next()
+            })
         }
         else{ res.sendStatus(403) }
     }else{        
