@@ -4,7 +4,7 @@ const multer = require('multer');
 const inMemoryStorage = multer.memoryStorage()
 const upload = multer({ storage: inMemoryStorage })
 
-const tokenValidation = require('../tokanValidation');
+const tokenValidation = require('../tokenValidation');
 
 const router = express.Router()
 

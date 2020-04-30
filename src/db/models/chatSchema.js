@@ -8,12 +8,12 @@ const chatSchema = Schema({
     chat: [{
         date: String,
         message: String,
-        userName: String
-    }],
-    days: {
-        type: Number,
-        default: 1
-    }  
+        userName: String,
+        days: {
+            type: Number,
+            default: 1
+        } 
+    }], 
 })
 
 module.exports = mongoose.model('Chats', chatSchema);

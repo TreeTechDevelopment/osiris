@@ -4,6 +4,7 @@ const axios = require('axios').default;
 const sectionCollection = require('./db/models/sectionsSchema')
 const userCollection = require('./db/models/userSchema')
 const plantCollection = require('./db/models/plantSchema')
+const chatCollection = require('./db/models/chatSchema')
 
 const { checkDate, missingPlantsFormatted } = require('./helpers');
 
@@ -47,6 +48,12 @@ const jobCheckEmployeeDone = new CronJob('0 0 3 * * *', async () => {
     }catch(e){ console.log(e) }
 });
 
+const jobCheckChat = new CronJob('0 0 3 */1 * *', () => {
+    chatCollection.updateMany({ 'chat.days': 1 }, { 'chat.$.days': 2 })
+    chatCollection.updateMany({ 'chat.days': 2 }, { 'chat.$.days': 3 })
+    chatCollection.deleteMany({ 'chat.days': 3 })
+});
+
 //const jobKeepAwake = new CronJob('0 */20 * * * *', () => {
   //  axios.get(`https://kaffeeqrapp.herokuapp.com`)
     //    .then((res) => {
@@ -55,4 +62,5 @@ const jobCheckEmployeeDone = new CronJob('0 0 3 * * *', async () => {
 
 //jobKeepAwake.start()
 jobCheckEmployeeDone.start()
+jobCheckChat.start()
 jobGetWeather.start()
