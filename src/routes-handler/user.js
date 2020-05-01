@@ -336,12 +336,15 @@ const deleteUser = async (req,res)=> {
             }
         })
         let section = await sectionCollection.findOne({ 'sectionName': user.section })
-        let indexEmployeeInSection = section.employees.findIndex( employee => employee.idEmployee = id )
-        section.employees.splice(indexEmployeeInSection, 1)
-        section.save()
+        if(section){
+            let indexEmployeeInSection = section.employees.findIndex( employee => employee.idEmployee = id )
+            section.employees.splice(indexEmployeeInSection, 1)
+            section.save()
+        }
         await userCollection.findByIdAndRemove(id)
         res.sendStatus(200)
     }catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
 }

@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 //const brandedQRCode = require('branded-qr-code')
 //const PDFDocument = require('pdfkit');
 
-const Collection = require('./models/chatSchema')
+const Collection = require('./models/sectionsSchema')
 
 mongoose.connect(process.env.DB, {
     useNewUrlParser: true, 

@@ -31,45 +31,47 @@ const getInfoSection = async (req, res) => {
     res.status(200).json({ plants, employees, section })
 }
 
-const updateSection = async (req, res) => {    
-    const { numberSection, coordinates, nameSections, employees, plants, owners } = req.body
-    console.log(coordinates)
-    console.log(req.body)
-    let sectionsCreated = []
-    await sectionCollection.deleteMany()
-    for(let i = 0; i < numberSection; i++){
-        let finalNumber = plants[i].split('-')[1]
-        let initialNumber = plants[i].split('-')[0]
-        let fni = parseInt(finalNumber)
-        let ini = parseInt(initialNumber)
-        let finalN = '';
-        let initialN = '';
-        if(fni >= 1){ finalN = `000${fni}` }
-        if(fni >= 10){ finalN = `00${fni}` }
-        if(fni >= 100){ finalN = `0${fni}` }
-        if(fni >= 1000){ finalN = `${fni}` }
-        if(ini >= 1){ initialN = `000${ini}` }
-        if(ini >= 10){ initialN = `00${ini}` }
-        if(ini >= 100){ initialN = `0${ini}` }
-        if(ini >= 1000){ initialN = `${ini}` }
-        await plantCollection.updateMany({ 'serialNumber': {$lte: finalN, $gte: initialN} }, { section: nameSections[i] })
-        coordinates[i].forEach((coordinate) => { delete coordinate._id })
-        let newSection = new sectionCollection({
-            sectionName: nameSections[i],
-            coordinates: coordinates[i],
-            employees: employees[i],
-            plants: plants[i],
-            owner: owners[i]
-        })
-        newSection.save()
-        sectionsCreated.push(newSection)
-        for(let j = 0; j < employees[i].length; j++){
-            let employee = await userCollection.findById(employees[i][j].idEmployee)
-            employee.section = nameSections[i]
-            employee.save()
-        }
-    }        
-    res.status(200).json({ updated: true, sections: sectionsCreated})
+const updateSection = async (req, res) => {
+    try{
+        const { numberSection, coordinates, nameSections, employees, plants, owners } = req.body
+        let sectionsCreated = []
+        await sectionCollection.deleteMany()
+        for(let i = 0; i < numberSection; i++){
+            let finalNumber = plants[i].split('-')[1]
+            let initialNumber = plants[i].split('-')[0]
+            let fni = parseInt(finalNumber)
+            let ini = parseInt(initialNumber)
+            let finalN = '';
+            let initialN = '';
+            if(fni >= 1){ finalN = `000${fni}` }
+            if(fni >= 10){ finalN = `00${fni}` }
+            if(fni >= 100){ finalN = `0${fni}` }
+            if(fni >= 1000){ finalN = `${fni}` }
+            if(ini >= 1){ initialN = `000${ini}` }
+            if(ini >= 10){ initialN = `00${ini}` }
+            if(ini >= 100){ initialN = `0${ini}` }
+            if(ini >= 1000){ initialN = `${ini}` }
+            await plantCollection.updateMany({ 'serialNumber': {$lte: finalN, $gte: initialN} }, { section: nameSections[i] })
+            coordinates[i].forEach((coordinate) => { delete coordinate._id })
+            let newSection = new sectionCollection({
+                sectionName: nameSections[i],
+                coordinates: coordinates[i],
+                employees: employees[i],
+                plants: plants[i],
+                owner: owners[i]
+            })
+            newSection.save()
+            sectionsCreated.push(newSection)
+            for(let j = 0; j < employees[i].length; j++){
+                let employee = await userCollection.findById(employees[i][j].idEmployee)
+                employee.section = nameSections[i]
+                employee.save()
+            }
+        }        
+        res.json({ updated: true, sections: sectionsCreated})
+    }catch(e){
+        res.sendStatus(500)
+    }
 }
 
 module.exports = {
