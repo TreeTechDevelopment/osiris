@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 //const brandedQRCode = require('branded-qr-code')
 //const PDFDocument = require('pdfkit');
 
-const Collection = require('./models/userSchema')
+const Collection = require('./models/chatSchema')
 
 mongoose.connect(process.env.DB, {
     useNewUrlParser: true, 
@@ -58,6 +58,5 @@ mongoose.connect(process.env.DB, {
         /* try{
             console.log(moment('2020-04-21').isBetween('2020-03-21', '2020-05-21'))
         }catch(e){ console.log("error") } */
-
     }) 
     .catch((err) => {console.log(err)}) 

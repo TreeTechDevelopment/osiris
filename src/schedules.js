@@ -48,10 +48,9 @@ const jobCheckEmployeeDone = new CronJob('0 0 3 * * *', async () => {
     }catch(e){ console.log(e) }
 });
 
-const jobCheckChat = new CronJob('0 0 3 */1 * *', () => {
-    chatCollection.updateMany({ 'chat.days': 1 }, { 'chat.$.days': 2 })
-    chatCollection.updateMany({ 'chat.days': 2 }, { 'chat.$.days': 3 })
-    chatCollection.deleteMany({ 'chat.days': 3 })
+const jobCheckChat = new CronJob('0 0 3 */1 * *', async () => {
+    await chatCollection.updateMany({}, { '$pull': { 'chat':  { 'days': 3 } } })
+    await chatCollection.updateMany({}, { '$inc': {'chat.$[].days': 1}  })
 });
 
 //const jobKeepAwake = new CronJob('0 */20 * * * *', () => {
