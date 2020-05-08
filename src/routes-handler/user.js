@@ -36,41 +36,48 @@ const getUsers  = async (req,res)=> {
 }
 
 const login = async (req, res) => {
-    const { userName, password } = req.body 
-    let user = await userCollection.findOne({"userName": userName})   
-    if(user){
-        if(user.validPassword(password)){ 
-            const payload= {
-                userName,
-                rol: user.rol,
-                _id: user._id
-            }
-            let token = jwt.sign(payload, process.env.JWT_SEED , { expiresIn: 60 * 60 * 24 });
-            token = `${process.env.TOKEN_HEADER} ${token}`
-            if(user.rol === "employee"){
-                let section = await sectionCollection.findOne({ 'sectionName': user.section })
-                let userResponse = {
-                    userName, 
-                    rol: user.rol, 
-                    todos:user.todos, 
-                    plants: user.plants, 
-                    id: user._id, 
-                    missingPlants: user.missingPlants,
-                    section: section.coordinates
+    try{
+        const { userName, password } = req.body 
+        let user = await userCollection.findOne({"userName": userName})   
+        if(user){
+            if(user.validPassword(password)){ 
+                const payload= {
+                    userName,
+                    rol: user.rol,
+                    _id: user._id
                 }
-                res.json({ logged: true, user: userResponse, token }) 
-            }else if(user.rol === "manager"){                
-                res.json({ logged: true, user: {userName, rol: user.rol, id: user._id }, token }) 
-            }else if(user.rol === "admin"){                
-                res.json({ logged: true, user: {userName, rol: user.rol, id: user._id }, token }) 
-            }else if(user.rol === "owner"){                
-                res.json({ logged: true, user: {userName, rol: user.rol, id: user._id }, token }) 
+                let token = jwt.sign(payload, process.env.JWT_SEED , { expiresIn: 60 * 60 * 24 });
+                token = `${process.env.TOKEN_HEADER} ${token}`
+                if(user.rol === "employee"){
+                    let section = await sectionCollection.findOne({ 'sectionName': user.section })
+                    if(!section){ return res.status(400).send('Este usuario no está asignado a ninguna sección. Un administrador debe .') }
+                    let userResponse = {
+                        userName, 
+                        rol: user.rol, 
+                        todos:user.todos, 
+                        plants: user.plants, 
+                        id: user._id, 
+                        missingPlants: user.missingPlants,
+                        section: section.coordinates
+                    }
+                    res.json({ logged: true, user: userResponse, token }) 
+                }else if(user.rol === "manager"){                
+                    res.json({ logged: true, user: {userName, rol: user.rol, id: user._id }, token }) 
+                }else if(user.rol === "admin"){                
+                    res.json({ logged: true, user: {userName, rol: user.rol, id: user._id }, token }) 
+                }else if(user.rol === "owner"){                
+                    res.json({ logged: true, user: {userName, rol: user.rol, id: user._id }, token }) 
+                }
             }
+            else{ res.status(200).json({ logged: false, user: {} }) }
+        }else{
+            res.json({ logged: false, user: {}})
         }
-        else{ res.status(200).json({ logged: false, user: {} }) }
-    }else{
-        res.json({ logged: false, user: {}})
+    }catch(e){
+        console.log(e)
+        res.sendStatus(500)
     }
+    
 }
 
 const updateUserwPhoto = async (req, res) => {

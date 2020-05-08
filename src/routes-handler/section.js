@@ -31,7 +31,7 @@ const getInfoSection = async (req, res) => {
     res.status(200).json({ plants, employees, section })
 }
 
-const updateSection = async (req, res) => {
+/* const updateSection = async (req, res) => {
     try{
         const { numberSection, coordinates, nameSections, employees, plants, owners } = req.body
         let sectionsCreated = []
@@ -72,10 +72,95 @@ const updateSection = async (req, res) => {
     }catch(e){
         res.sendStatus(500)
     }
+} */
+
+const createSection = async (req,res) => {
+    try{
+        const { coordinates, sectionName, employees, plants, owner } = req.body
+        coordinates.forEach((coordinate) => { delete coordinate._id })
+        let newSection = new sectionCollection({
+            sectionName,
+            coordinates,
+            plants,
+            owner,
+            employees
+        })
+        for(let j = 0; j < employees.length; j++){
+            let employee = await userCollection.findById(employees[j].idEmployee)
+            employee.section = sectionName
+            employee.save()
+        }
+        newSection.save((err, newSection) => {
+            if(err){
+                return res.status(400).send('Ya existe algúna sección con el mismo nombre. Este dato tiene que ser único.')
+            }
+            res.json({ updated: true })
+        })
+    }catch(e){
+        res.sendStatus(500)
+    }
+}
+
+const updateSection = async (req, res) => {
+    try{
+        const { id } = req.params
+        const { coordinates, sectionName, employees, plants, owner } = req.body
+        console.log(coordinates)
+        let section = await sectionCollection.findById(id)
+        coordinates.forEach((coordinate) => { delete coordinate._id })
+        section.owner = owner
+        section.coordinates = coordinates
+        section.sectionName = sectionName
+        section.employees = employees
+        section.plants = plants
+        section.save()
+        for(let j = 0; j < employees.length; j++){
+            let employee = await userCollection.findById(employees[j].idEmployee)
+            employee.section = sectionName
+            employee.save()
+        }
+        let finalNumber = plants.split('-')[1]
+        let initialNumber = plants.split('-')[0]
+        let fni = parseInt(finalNumber)
+        let ini = parseInt(initialNumber)
+        let finalN = '';
+        let initialN = '';
+        if(fni >= 1){ finalN = `000${fni}` }
+        if(fni >= 10){ finalN = `00${fni}` }
+        if(fni >= 100){ finalN = `0${fni}` }
+        if(fni >= 1000){ finalN = `${fni}` }
+        if(ini >= 1){ initialN = `000${ini}` }
+        if(ini >= 10){ initialN = `00${ini}` }
+        if(ini >= 100){ initialN = `0${ini}` }
+        if(ini >= 1000){ initialN = `${ini}` }
+        await plantCollection.updateMany({ 'serialNumber': {$lte: finalN, $gte: initialN} }, { section: sectionName })       
+        res.json({ updated: true })
+    }catch(e){
+        console.log(e)
+        res.sendStatus(500)
+    }
+}
+
+const deleteSection = async (req, res) => {
+    try{
+        let { id } = req.params
+        let section = await sectionCollection.findByIdAndRemove(id)
+        let employees = []
+        for(let i = 0; i< section.employees.length; i++){
+            let employee = await userCollection.findById(section.employees[i].idEmployee)
+            employees.push(employee.name)
+        }
+        res.json({ section, employees})
+
+    }catch(e){
+        res.sendStatus(500)   
+    }
 }
 
 module.exports = {
     getSections,
     getInfoSection,
-    updateSection
+    updateSection,
+    deleteSection,
+    createSection
 }

@@ -58,5 +58,6 @@ mongoose.connect(process.env.DB, {
         /* try{
             console.log(moment('2020-04-21').isBetween('2020-03-21', '2020-05-21'))
         }catch(e){ console.log("error") } */
+        //await Collection.findByIdAndRemove('5eb21be4c3c7c02b44a5fe34')
     }) 
     .catch((err) => {console.log(err)}) 

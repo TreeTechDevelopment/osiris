@@ -159,6 +159,30 @@ const reportPlant = async (req, res) => {
     }
 }
 
+const updatePlants = async (req, res) => {
+    try{
+        const { plants } = req.body
+        console.log(plants)
+        for(let i = 0; i < plants.length; i++){
+            const { id, name, width, height, numberFruits, type, date, plantedDate } = plants[i]    
+            let plant = await plantCollection.findById(id)     
+            updateDate = moment(date).format('DD MM YYYY')
+            if(name !== ""){ plant.name = name }
+            if(width !== ""){ plant.width = Number(width) }
+            if(height !== ""){ plant.height = Number(height) }
+            if(numberFruits !== ""){ plant.numberFruits = Number(numberFruits) }
+            if(type !== "" ){ plant.type = type }
+            if(plantedDate !== ""){ plant.plantedDate = plantedDate }
+            plant.lastUpdate = updateDate.replace(/\s/g, '/')
+            plant.save()
+        }
+        res.sendStatus(200)
+    }catch(e){
+        console.log(e)
+        res.sendStatus(500)
+    }
+}
+
 module.exports = {
     getPlant,
     getPLantsReported,
@@ -166,5 +190,6 @@ module.exports = {
     getPlantBySection,
     updatePlant,
     deleteReport,
-    reportPlant
+    reportPlant,
+    updatePlants
 }
