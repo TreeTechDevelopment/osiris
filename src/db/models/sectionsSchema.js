@@ -7,7 +7,7 @@ const sections = Schema({
         type: String,
         unique: true
     },
-    coordinates: [{
+    coordinates: [{ 
         latitude: Number,
         longitude: Number
     }],
@@ -20,6 +20,13 @@ const sections = Schema({
     temperature: {
         type: Number,
         default: 0
+    },
+    lastPeriod: {
+        width: Number,
+        height: Number,
+        numberFruits: Number,
+        withPlague: Number,
+        withoutPlague: Number
     },
     checkDateFrom : String,
     checkDateTo: String

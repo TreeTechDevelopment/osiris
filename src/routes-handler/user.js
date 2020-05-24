@@ -378,12 +378,6 @@ const finisReading = async (req, res) => {
         const {reads, userName, dateStarted, dateFinished} = req.body
         let user = await userCollection.findOne({ "userName": userName })
         let mean = (dateFinished - dateStarted) / reads.length
-        for(let i = 0; i < reads.length; i++){
-            let plant = await plantCollection.findById(reads[i].plantId)
-            let date = moment(reads[i].date).format('DD MM YYYY')
-            plant.lastUpdate = date.replace(/\s/g, '/')
-            plant.save()
-        }
         mean = mean / 60000
         user.reads = reads
         user.meanReads = Number(mean.toFixed(2))

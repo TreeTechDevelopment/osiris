@@ -2,14 +2,15 @@ const getStream = require('into-stream');
 const moment = require('moment')
 
 const {getBlobName, containerName, blobService, getFileUrl} = require('../azure')
+const { numberToSerialNumber } = require('../helpers')
 
 const plantCollection = require('../db/models/plantSchema');
 
 const getPlant = async (req, res) => {
     const { id, from, to, plantsUser } = req.query    
     if(id){
-        let plantFrom = plantsUser.split('-')[0]
-        let plantTo = plantsUser.split('-')[1]
+        let plantFrom = numberToSerialNumber(plantsUser.split('-')[0])
+        let plantTo = numberToSerialNumber(plantsUser.split('-')[1])
         let plant = await plantCollection.findById(id)
         if(plant){
             if(plantFrom <= plant.serialNumber && plantTo >= plant.serialNumber){
@@ -23,11 +24,7 @@ const getPlant = async (req, res) => {
     }else{
         let plants = [] 
         for(let i = from; i < to; i++){
-            let serialNumber = ''
-            if(i < 10){ serialNumber = `000${i}` }
-            if(i >= 10 && i < 100){ serialNumber = `00${i}` }
-            if(i >= 100 && i < 1000){ serialNumber = `0${i}` }
-            if(i >= 1000){ serialNumber = `${i}` }
+            let serialNumber = numberToSerialNumber(i)
             let plant = await plantCollection.findOne({ 'serialNumber': serialNumber })
             plants.push(plant)
         }
@@ -45,11 +42,7 @@ const getSpecificPlant = async (req,res) => {
     let plants = []
     let queryObject = {}
     if(serialNumber !== ''){
-        let number = ''
-        if(parseInt(serialNumber) >= 0){ number = `000${serialNumber}` }
-        if(parseInt(serialNumber) >= 10){ number = `00${serialNumber}` }
-        if(parseInt(serialNumber) >= 100){ number = `0${serialNumber}` }
-        if(parseInt(serialNumber) >= 1000){ number = `${serialNumber}` }
+        let number = numberToSerialNumber(serialNumber)
         plants = await plantCollection.find({ 'serialNumber': number })        
     }else{        
         if(width !== ""){

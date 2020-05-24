@@ -4,7 +4,6 @@ const Schema = mongoose.Schema;
 
 const plantSchema = Schema({
     name: String,
-    temperature: Number,
     numberFruits: Number,
     width: Number,
     height: Number,

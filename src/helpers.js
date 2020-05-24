@@ -31,7 +31,8 @@ const missingPlantsFormatted = (serialNumbers) => {
                 missingPLants.push(serialNumbersSorted[i+1])
                 continue
             }
-            missingPLants.push(`${initialValue}-${lastValue}`)
+            if(lastValue === ""){ missingPLants.push(`${initialValue}`) }
+            else{ missingPLants.push(`${initialValue}-${lastValue}`) }
             initialValue = serialNumbersSorted[i+1]
             if(i === serialNumbersSorted.length - 2){ missingPLants.push(initialValue) }
         }

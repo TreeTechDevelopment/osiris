@@ -1,3 +1,5 @@
+const moment = require('moment')
+
 const sectionCollection = require('../db/models/sectionsSchema');
 const plantCollection = require('../db/models/plantSchema');
 const userCollection = require('../db/models/userSchema');
@@ -31,59 +33,27 @@ const getInfoSection = async (req, res) => {
     res.status(200).json({ plants, employees, section })
 }
 
-/* const updateSection = async (req, res) => {
-    try{
-        const { numberSection, coordinates, nameSections, employees, plants, owners } = req.body
-        let sectionsCreated = []
-        await sectionCollection.deleteMany()
-        for(let i = 0; i < numberSection; i++){
-            let finalNumber = plants[i].split('-')[1]
-            let initialNumber = plants[i].split('-')[0]
-            let fni = parseInt(finalNumber)
-            let ini = parseInt(initialNumber)
-            let finalN = '';
-            let initialN = '';
-            if(fni >= 1){ finalN = `000${fni}` }
-            if(fni >= 10){ finalN = `00${fni}` }
-            if(fni >= 100){ finalN = `0${fni}` }
-            if(fni >= 1000){ finalN = `${fni}` }
-            if(ini >= 1){ initialN = `000${ini}` }
-            if(ini >= 10){ initialN = `00${ini}` }
-            if(ini >= 100){ initialN = `0${ini}` }
-            if(ini >= 1000){ initialN = `${ini}` }
-            await plantCollection.updateMany({ 'serialNumber': {$lte: finalN, $gte: initialN} }, { section: nameSections[i] })
-            coordinates[i].forEach((coordinate) => { delete coordinate._id })
-            let newSection = new sectionCollection({
-                sectionName: nameSections[i],
-                coordinates: coordinates[i],
-                employees: employees[i],
-                plants: plants[i],
-                owner: owners[i]
-            })
-            newSection.save()
-            sectionsCreated.push(newSection)
-            for(let j = 0; j < employees[i].length; j++){
-                let employee = await userCollection.findById(employees[i][j].idEmployee)
-                employee.section = nameSections[i]
-                employee.save()
-            }
-        }        
-        res.json({ updated: true, sections: sectionsCreated})
-    }catch(e){
-        res.sendStatus(500)
-    }
-} */
-
 const createSection = async (req,res) => {
     try{
-        const { coordinates, sectionName, employees, plants, owner } = req.body
+        const { coordinates, sectionName, employees, plants, owner, checkDateFrom } = req.body
         coordinates.forEach((coordinate) => { delete coordinate._id })
+        let sections = await sectionCollection.find({})
+        for(let i = 0; i < sections.length; i++){
+            if((Number(sections[i].plants.split('-')[0]) <= Number(plants.split('-')[0]) && Number(sections[i].plants.split('-')[1]) >= Number(plants.split('-')[0])) ||
+            (Number(sections[i].plants.split('-')[0]) <= Number(plants.split('-')[1]) && Number(sections[i].plants.split('-')[1]) >= Number(plants.split('-')[1]))){
+                return res.status(400).send('Ya existe algúna sección que tiene asignada alguna de las plantas ingresadas.')
+            }
+        }
+        let date = moment(checkDateFrom, 'DD/MM/YYYY').add(28, 'day').toDate()
+        let dateFormated = moment(date).format('DD/MM/YYYY')
         let newSection = new sectionCollection({
             sectionName,
             coordinates,
             plants,
             owner,
-            employees
+            employees,
+            checkDateFrom,
+            checkDateTo: dateFormated
         })
         for(let j = 0; j < employees.length; j++){
             let employee = await userCollection.findById(employees[j].idEmployee)
@@ -97,6 +67,7 @@ const createSection = async (req,res) => {
             res.json({ updated: true })
         })
     }catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
 }
@@ -104,8 +75,18 @@ const createSection = async (req,res) => {
 const updateSection = async (req, res) => {
     try{
         const { id } = req.params
-        const { coordinates, sectionName, employees, plants, owner } = req.body
-        console.log(coordinates)
+        const { coordinates, sectionName, employees, plants, owner, checkDateFrom } = req.body
+        let sections = await sectionCollection.find({})
+        for(let i = 0; i < sections.length; i++){
+            if(sections[i]._id !== id){
+                if((Number(sections[i].plants.split('-')[0]) <= Number(plants.split('-')[0]) && Number(sections[i].plants.split('-')[1]) >= Number(plants.split('-')[0])) ||
+                (Number(sections[i].plants.split('-')[0]) <= Number(plants.split('-')[1]) && Number(sections[i].plants.split('-')[1]) >= Number(plants.split('-')[1]))){
+                    return res.status(400).send('Ya existe algúna sección que tiene asignada alguna de las plantas ingresadas.')
+                }
+            }
+        }
+        let date = moment(checkDateFrom, 'DD/MM/YYYY').add(28, 'day').toDate()
+        let dateFormated = moment(date).format('DD/MM/YYYY')
         let section = await sectionCollection.findById(id)
         coordinates.forEach((coordinate) => { delete coordinate._id })
         section.owner = owner
@@ -113,6 +94,8 @@ const updateSection = async (req, res) => {
         section.sectionName = sectionName
         section.employees = employees
         section.plants = plants
+        section.checkDateFrom = checkDateFrom
+        section.checkDateTo = dateFormated
         section.save()
         for(let j = 0; j < employees.length; j++){
             let employee = await userCollection.findById(employees[j].idEmployee)

@@ -7,7 +7,10 @@ const mongoose = require('mongoose');
 //const brandedQRCode = require('branded-qr-code')
 //const PDFDocument = require('pdfkit');
 
-const Collection = require('./models/sectionsSchema')
+const moment = require('moment')
+const Collection = require('./models/buySchema')
+
+const { checkDate } = require('../helpers')  
 
 mongoose.connect(process.env.DB, {
     useNewUrlParser: true, 
@@ -59,5 +62,13 @@ mongoose.connect(process.env.DB, {
             console.log(moment('2020-04-21').isBetween('2020-03-21', '2020-05-21'))
         }catch(e){ console.log("error") } */
         //await Collection.findByIdAndRemove('5eb21be4c3c7c02b44a5fe34')
+        //let date = '15/05/2020'
+        //let date = moment([2020, 5, 08]).add(28, 'days')
+
+        //console.log(moment(date._d, "MM-DD-YYYY"))
+        //console.log(moment(moment().toDate()).format('DD/MM/YYYY'))
+        /* let plants = await Collection.find({ 'serialNumber': { $gte: '0010', $lte: '0020' } })
+        console.log(plants)
+        console.log(plants.length) */
     }) 
     .catch((err) => {console.log(err)}) 
