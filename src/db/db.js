@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 //const PDFDocument = require('pdfkit');
 
 const moment = require('moment')
-const Collection = require('./models/buySchema')
+const Collection = require('./models/sectionsSchema')
 
 const { checkDate } = require('../helpers')  
 

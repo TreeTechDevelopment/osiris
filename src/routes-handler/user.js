@@ -30,7 +30,6 @@ const getUsers  = async (req,res)=> {
         }    
         res.json({ users })
     }catch(e){
-        console.log(e)
         res.sendStatus(500)
     }
 }
@@ -74,7 +73,6 @@ const login = async (req, res) => {
             res.json({ logged: false, user: {}})
         }
     }catch(e){
-        console.log(e)
         res.sendStatus(500)
     }
     
@@ -114,14 +112,38 @@ const updateUserwPhoto = async (req, res) => {
         
             });
         }
+        if(user.rol === "employee"){
+            let chat = await chatCollection.findOne({ 'from': user.userName })
+            chat.from = userName
+            chat.save()
+        }else if(user.rol === "manager"){
+            let chats = await chatCollection.find({ 'to': user.userName })
+            for(let i = 0; i < chats.length; i++){
+                chats[i].to = userName
+                chats[i].save()
+            }
+        }else if(user.rol === "owner"){
+            let sections = await sectionCollection.find({ 'owner': user.userName })
+            for(let i = 0; i < sections.length; i++){
+                sections[i].owner = userName
+                sections[i].save()
+            }
+        }
         user.userName = userName
         user.name = name
         user.photo = getFileUrl(blobName)
         user.address = address
         if(section){ user.section = section }
-        user.save()
-        delete user.password
-        res.json({ user })
+        if(plants){ user.plants = plants }
+        user.save((err, newUser) => {
+            if(err){
+                return res.status(400).send('Ya existe algún empleado con el mismo usuario. Este dato tiene que ser único.')
+            }
+            
+            
+            delete newUser.password
+            res.status(200).json({ user: newUser })
+        })
     }catch(e){
         res.sendStatus(500)
     }
@@ -133,11 +155,24 @@ const createUser = async (req, res) => {
         let { file } = req
         let { userName, name, address, section, plants, password, rol, sections } = req.body
 
+        let blobName = getBlobName(file.originalname)
+        let stream = getStream(file.buffer)
+        let streamLength = file.buffer.length
+
+        blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
+            if(err) {
+                res.sendStatus(500)
+                return;
+            }
+
+        });    
+
         let newUser = {
             userName,
             name, 
             address,
-            rol
+            rol,
+            photo: getFileUrl(blobName)
         }
 
         if(rol === 'employee'){
@@ -146,6 +181,12 @@ const createUser = async (req, res) => {
             newUser.plants = `${plantFrom}-${plantTo}`
             newUser.missingPlants = `${plantFrom}-${plantTo}`
             newUser.section = section
+        } else if(rol === 'owner'){
+            for(let i = 0; i < sections.split('-').length; i++){
+                let section = await sectionCollection.findOne({ 'sectionName': sections.split('-')[i] })
+                section.owner = userName
+                section.save()
+            }
         }
 
         let user = new userCollection(newUser)
@@ -153,31 +194,17 @@ const createUser = async (req, res) => {
         let passwordHashed = user.generateHash(password)
         user.password = passwordHashed
 
-        user.save(async (err, newUser) => {
+        user.save((err, newUser) => {
             if(err){
+                blobService.deleteBlobIfExists(containerName, blobName, (err, result) => {
+                    if(err) {
+                        res.sendStatus(500)
+                        return; 
+                    }
+                })
                 return res.status(400).send('Ya existe algún empleado con el mismo usuario. Este dato tiene que ser único.')
             }
-            let blobName = getBlobName(file.originalname)
-            let stream = getStream(file.buffer)
-            let streamLength = file.buffer.length
-            blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
-                if(err) {
-                    res.sendStatus(500)
-                    return;
-                }
-
-            });
-
-            if(rol === 'owner'){
-                for(let i = 0; i < sections.length; i++){
-                    let section = await sectionCollection.findOne({ 'sectionName': sections[i] })
-                    section.owner = userName
-                    section.save()
-                }
-            }
-
-            newUser.photo = getFileUrl(blobName)
-            newUser.save()
+            
             
             delete newUser.password
             res.status(200).json({ user: newUser })
@@ -197,11 +224,17 @@ const updatewoPhoto = async (req, res) => {
             let chat = await chatCollection.findOne({ 'from': user.userName })
             chat.from = userName
             chat.save()
-        }if(user.rol === "manager"){
+        }else if(user.rol === "manager"){
             let chats = await chatCollection.find({ 'to': user.userName })
             for(let i = 0; i < chats.length; i++){
                 chats[i].to = userName
                 chats[i].save()
+            }
+        }else if(user.rol === "owner"){
+            let sections = await sectionCollection.find({ 'owner': user.userName })
+            for(let i = 0; i < sections.length; i++){
+                sections[i].owner = userName
+                sections[i].save()
             }
         }
         user.userName = userName
@@ -209,9 +242,15 @@ const updatewoPhoto = async (req, res) => {
         user.address = address
         if(section){ user.section = section }
         if(plants){ user.plants = plants }
-        user.save()
-        delete user.password
-        res.status(200).json({ user })
+        user.save((err, newUser) => {
+            if(err){
+                return res.status(400).send('Ya existe algún empleado con el mismo usuario. Este dato tiene que ser único.')
+            }
+            
+            
+            delete newUser.password
+            res.status(200).json({ user: newUser })
+        })
     }catch(e){
         res.sendStatus(500)
     }
@@ -336,14 +375,16 @@ const deleteUser = async (req,res)=> {
     try{
         const { id } = req.body       
         let user = await userCollection.findById(id)   
-        blobService.deleteBlobIfExists(containerName, user.photo.split('/')[4], (err, result) => {
-            if(err) {
-                res.sendStatus(500)
-                return; 
-            }
-        })
+        if(user.photo) {
+            blobService.deleteBlobIfExists(containerName, user.photo.split('/')[4], (err, result) => {
+                if(err) {
+                    res.sendStatus(500)
+                    return; 
+                }
+            })
+        }
         let section = await sectionCollection.findOne({ 'sectionName': user.section })
-        if(section){
+        if(section && user.rol === "employee"){
             let indexEmployeeInSection = section.employees.findIndex( employee => employee.idEmployee = id )
             section.employees.splice(indexEmployeeInSection, 1)
             section.save()
@@ -351,7 +392,6 @@ const deleteUser = async (req,res)=> {
         await userCollection.findByIdAndRemove(id)
         res.sendStatus(200)
     }catch(e){
-        console.log(e)
         res.sendStatus(500)
     }
 }

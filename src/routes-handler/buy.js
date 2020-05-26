@@ -19,7 +19,6 @@ const postBuy = (req, res) => {
                     return;
                 }
             });
-            console.log(files[i].originalname)
             if(files[i].originalname.split('_')[1] === "photo"){ newBuy.photo = getFileUrl(blobName) }
             else{ newBuy.sign = getFileUrl(blobName) }
         }
@@ -63,7 +62,6 @@ const deleteBuy = async (req, res) => {
         await buyCollection.findByIdAndRemove(req.params.id)
         res.json({ deleted: true, buy })
     }catch(e){
-        console.log(e)
         res.sendStatus(500)
     }
 }
