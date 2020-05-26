@@ -67,7 +67,6 @@ const createSection = async (req,res) => {
             res.json({ updated: true })
         })
     }catch(e){
-        console.log(e)
         res.sendStatus(500)
     }
 }
@@ -119,7 +118,6 @@ const updateSection = async (req, res) => {
         await plantCollection.updateMany({ 'serialNumber': {$lte: finalN, $gte: initialN} }, { section: sectionName })       
         res.json({ updated: true })
     }catch(e){
-        console.log(e)
         res.sendStatus(500)
     }
 }

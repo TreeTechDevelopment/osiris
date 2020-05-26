@@ -181,7 +181,7 @@ const createUser = async (req, res) => {
             newUser.plants = `${plantFrom}-${plantTo}`
             newUser.missingPlants = `${plantFrom}-${plantTo}`
             newUser.section = section
-        } else if(rol === 'owner'){
+        } else if(rol === 'owner' && sections){
             for(let i = 0; i < sections.split('-').length; i++){
                 let section = await sectionCollection.findOne({ 'sectionName': sections.split('-')[i] })
                 section.owner = userName
