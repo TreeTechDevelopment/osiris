@@ -70,5 +70,8 @@ mongoose.connect(process.env.DB, {
         /* let plants = await Collection.find({ 'serialNumber': { $gte: '0010', $lte: '0020' } })
         console.log(plants)
         console.log(plants.length) */
+        let section = await Collection.findById('5eb21bb5c3c7c02b44a5fe2e')
+        section.owner = "Propietario"
+        section.save()
     }) 
     .catch((err) => {console.log(err)}) 

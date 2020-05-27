@@ -4,6 +4,8 @@ const sectionCollection = require('../db/models/sectionsSchema');
 const plantCollection = require('../db/models/plantSchema');
 const userCollection = require('../db/models/userSchema');
 
+const { numberToSerialNumber } = require('../helpers');
+
 const getSections = async (req, res) => {
     let sections = await sectionCollection.find()
     res.status(200).json({ sections })
@@ -49,7 +51,7 @@ const createSection = async (req,res) => {
         let newSection = new sectionCollection({
             sectionName,
             coordinates,
-            plants,
+            plants: `${numberToSerialNumber(plants.split('-')[0])}-${numberToSerialNumber(plants.split('-')[1])}`,
             owner,
             employees,
             checkDateFrom,
@@ -77,9 +79,9 @@ const updateSection = async (req, res) => {
         const { coordinates, sectionName, employees, plants, owner, checkDateFrom } = req.body
         let sections = await sectionCollection.find({})
         for(let i = 0; i < sections.length; i++){
-            if(sections[i]._id !== id){
-                if((Number(sections[i].plants.split('-')[0]) <= Number(plants.split('-')[0]) && Number(sections[i].plants.split('-')[1]) >= Number(plants.split('-')[0])) ||
-                (Number(sections[i].plants.split('-')[0]) <= Number(plants.split('-')[1]) && Number(sections[i].plants.split('-')[1]) >= Number(plants.split('-')[1]))){
+            if(sections[i]._id != id){
+                if((Number(sections[i].plants.split('-')[0]) >= Number(plants.split('-')[0]) && Number(sections[i].plants.split('-')[0]) <= Number(plants.split('-')[1])) ||
+                (Number(sections[i].plants.split('-')[0]) >= Number(plants.split('-')[0]) && Number(sections[i].plants.split('-')[1]) <= Number(plants.split('-')[1]))){
                     return res.status(400).send('Ya existe algúna sección que tiene asignada alguna de las plantas ingresadas.')
                 }
             }
@@ -92,7 +94,7 @@ const updateSection = async (req, res) => {
         section.coordinates = coordinates
         section.sectionName = sectionName
         section.employees = employees
-        section.plants = plants
+        section.plants = `${numberToSerialNumber(plants.split('-')[0])}-${numberToSerialNumber(plants.split('-')[1])}`
         section.checkDateFrom = checkDateFrom
         section.checkDateTo = dateFormated
         section.save()

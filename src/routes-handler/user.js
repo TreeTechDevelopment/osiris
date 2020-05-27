@@ -22,7 +22,7 @@ const getUsers  = async (req,res)=> {
             return
         }
         if(section){ users = await userCollection.find({ 'rol': rol, 'section': section }, 'sectionName name userName rol todos') }
-        else{ users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos') }
+        else{ users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol') }
         if(sections){
             let sections = await sectionCollection.find({})
             res.status(200).json({ users, sections }) 
