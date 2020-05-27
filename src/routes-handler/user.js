@@ -122,12 +122,6 @@ const updateUserwPhoto = async (req, res) => {
                 chats[i].to = userName
                 chats[i].save()
             }
-        }else if(user.rol === "owner"){
-            let sections = await sectionCollection.find({ 'owner': user.userName })
-            for(let i = 0; i < sections.length; i++){
-                sections[i].owner = userName
-                sections[i].save()
-            }
         }
         user.userName = userName
         user.name = name
@@ -181,12 +175,6 @@ const createUser = async (req, res) => {
             newUser.plants = `${plantFrom}-${plantTo}`
             newUser.missingPlants = `${plantFrom}-${plantTo}`
             newUser.section = section
-        } else if(rol === 'owner' && sections){
-            for(let i = 0; i < sections.split('-').length; i++){
-                let section = await sectionCollection.findOne({ 'sectionName': sections.split('-')[i] })
-                section.owner = userName
-                section.save()
-            }
         }
 
         let user = new userCollection(newUser)
@@ -229,12 +217,6 @@ const updatewoPhoto = async (req, res) => {
             for(let i = 0; i < chats.length; i++){
                 chats[i].to = userName
                 chats[i].save()
-            }
-        }else if(user.rol === "owner"){
-            let sections = await sectionCollection.find({ 'owner': user.userName })
-            for(let i = 0; i < sections.length; i++){
-                sections[i].owner = userName
-                sections[i].save()
             }
         }
         user.userName = userName
