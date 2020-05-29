@@ -147,7 +147,7 @@ const createUser = async (req, res) => {
 
     try{
         let { file } = req
-        let { userName, name, address, section, plants, password, rol, sections } = req.body
+        let { userName, name, address, section, plants, password, rol } = req.body
 
         let blobName = getBlobName(file.originalname)
         let stream = getStream(file.buffer)
