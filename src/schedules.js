@@ -22,6 +22,7 @@ const jobGetWeather = new CronJob('0 */30 * * * *', () => {
 });
 
 const jobCheckEmployeeDone = new CronJob('0 0 3 */1 * *', async () => {
+//const jobCheckEmployeeDone = new CronJob('0 */1 * * * *', async () => {
     try{
         const employees = await userCollection.find({ 'rol': 'employee' })
         for(let i = 0; i < employees.length; i++){
@@ -31,8 +32,9 @@ const jobCheckEmployeeDone = new CronJob('0 0 3 */1 * *', async () => {
 
             let section = await sectionCollection.findOne({ 'sectionName': employees[i].section })
             if(section){
-                let dateCheckFrom = section.checkDateFrom
-                let dateCheckTo = section.checkDateTo
+
+                let dateCheckFrom = moment(moment(section.checkDateFrom, 'DD/MM/YYYY').subtract(1, 'day').toDate()).format('DD/MM/YYYY')
+                let dateCheckTo = moment(moment(section.checkDateTo, 'DD/MM/YYYY').add(1, 'day').toDate()).format('DD/MM/YYYY')
 
                 let plants = await plantCollection.find({ 'serialNumber': { $gte: plantFrom, $lte: plantTo } })
 
@@ -66,12 +68,14 @@ const jobCheckChat = new CronJob('0 10 3 */1 * *', async () => {
 });
 
 const jobCheckDate = new CronJob('0 20 3 */1 * *', async () => {
+//const jobCheckDate = new CronJob('0 */1 * * * *', async () => {    
     const sections = await sectionCollection.find({})
     for(let i = 0; i < sections.length; i++){
-        const newDateFrom = moment(moment(sections[i].dateCheckTo, 'DD/MM/YYYY').add(1, 'day').toDate()).format('DD/MM/YYYY')
-        if(!checkDate(moment(moment().toDate()).format('DD/MM/YYYY'), sections[i].dateCheckFrom, newDateFrom)){            
-            let date = moment(newDateFrom, 'DD/MM/YYYY').add(28, 'day').toDate()
-            let dateFormated = moment(date).format('DD/MM/YYYY')
+        const lastDateTo = moment(moment(sections[i].checkDateTo, 'DD/MM/YYYY').add(1, 'day').toDate()).format('DD/MM/YYYY')
+        const lastDateFrom = moment(moment(sections[i].checkDateFrom, 'DD/MM/YYYY').subtract(1, 'day').toDate()).format('DD/MM/YYYY')
+        if(!checkDate(moment(moment().toDate()).format('DD/MM/YYYY'), lastDateFrom, lastDateTo)){            
+            let date = moment(lastDateTo, 'DD/MM/YYYY').add(28, 'day').toDate()
+            let newDateTo = moment(date).format('DD/MM/YYYY')
 
             let plantFrom = numberToSerialNumber(sections[i].plants.split('-')[0])
             let plantTo = numberToSerialNumber(sections[i].plants.split('-')[1])
@@ -97,8 +101,9 @@ const jobCheckDate = new CronJob('0 20 3 */1 * *', async () => {
             sections[i].lastPeriod.numberFruits = averageNumberFruits / plants.length
             sections[i].lastPeriod.withoutPlague = averageSP 
             sections[i].lastPeriod.withPlague = averageCP
-            sections[i].dateCheckFrom = newDateFrom
-            sections[i].dateCheckTo = dateFormated
+            sections[i].checkDateFrom = lastDateTo
+            sections[i].checkDateTo = newDateTo
+            sections[i].finishRead = false
             sections[i].save()
             
         }
