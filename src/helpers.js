@@ -1,11 +1,11 @@
 const moment = require('moment');
 
 const numberToSerialNumber = (number) => {
-    let serialNumber = ''
-    if(parseInt(number) >= 0){ serialNumber = `000${number}` }
-    if(parseInt(number) >= 10){ serialNumber = `00${number}` }
-    if(parseInt(number) >= 100){ serialNumber = `0${number}` }
-    if(parseInt(number) >= 1000){ serialNumber = `${number}` }
+    let serialNumber = ''    
+    if(parseInt(number) >= 0){ serialNumber = `000${parseInt(number)}` }
+    if(parseInt(number) >= 10){ serialNumber = `00${parseInt(number)}` }
+    if(parseInt(number) >= 100){ serialNumber = `0${parseInt(number)}` }
+    if(parseInt(number) >= 1000){ serialNumber = `${parseInt(number)}` }
     return serialNumber
 }
 
