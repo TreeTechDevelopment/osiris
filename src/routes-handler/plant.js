@@ -38,7 +38,7 @@ const getPLantsReported = async (req,res) => {
 }
 
 const getSpecificPlant = async (req,res) => {
-    const { serialNumber, width, widthType, height, heightType, numberFruits, numberFruitsType, section } = req.query
+    const { serialNumber, width, widthType, height, heightType, numberFruits, numberFruitsType, section, reported } = req.query
     let plants = []
     let queryObject = {}
     if(serialNumber !== ''){
@@ -71,6 +71,9 @@ const getSpecificPlant = async (req,res) => {
         }
         if(section !== ""){
             queryObject.section = section
+        }
+        if(reported === "true"){
+            queryObject.statusReported = true
         }
         plants = await plantCollection.find(queryObject)
     }    
