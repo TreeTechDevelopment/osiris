@@ -8,9 +8,9 @@ const mongoose = require('mongoose');
 //const PDFDocument = require('pdfkit');
 
 const moment = require('moment')
-const Collection = require('./models/plantSchema')
+const Collection = require('./models/buySchema')
 
-const { checkDate } = require('../helpers')  
+const { createPDF } =require('../pdf')
 
 mongoose.connect(process.env.DB, {
     useNewUrlParser: true, 
@@ -69,6 +69,8 @@ mongoose.connect(process.env.DB, {
         //console.log(moment(moment().toDate()).format('DD/MM/YYYY'))
         /* let plants = await Collection.find({ 'serialNumber': { $gte: '0010', $lte: '0020' } })
         console.log(plants)
-        console.log(plants.length) */
+        console.log(plants.length) */  
+        
+
     }) 
     .catch((err) => {console.log(err)}) 

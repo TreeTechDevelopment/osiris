@@ -114,8 +114,10 @@ const updateUserwPhoto = async (req, res) => {
         }
         if(user.rol === "employee"){
             let chat = await chatCollection.findOne({ 'from': user.userName })
-            chat.from = userName
-            chat.save()
+            if(chat){
+                chat.from = userName
+                chat.save()
+            }
         }else if(user.rol === "manager"){
             let chats = await chatCollection.find({ 'to': user.userName })
             for(let i = 0; i < chats.length; i++){
@@ -139,6 +141,8 @@ const updateUserwPhoto = async (req, res) => {
             res.status(200).json({ user: newUser })
         })
     }catch(e){
+        console.log('COn foto')
+        console.log(e)
         res.sendStatus(500)
     }
 }
@@ -210,8 +214,10 @@ const updatewoPhoto = async (req, res) => {
         let user = await userCollection.findById(id)
         if(user.rol === "employee"){
             let chat = await chatCollection.findOne({ 'from': user.userName })
-            chat.from = userName
-            chat.save()
+            if(chat){
+                chat.from = userName
+                chat.save()
+            }
         }else if(user.rol === "manager"){
             let chats = await chatCollection.find({ 'to': user.userName })
             for(let i = 0; i < chats.length; i++){
@@ -234,6 +240,8 @@ const updatewoPhoto = async (req, res) => {
             res.status(200).json({ user: newUser })
         })
     }catch(e){
+        console.log('Sin foto')
+        console.log(e)
         res.sendStatus(500)
     }
 }
@@ -292,7 +300,7 @@ const createNewTodowMedia = async (req,res) => {
                 return;
             }
 
-        });
+        }); 
     }
     try{
         const {title, description, plants, plantsAlreadyOrdenated, userName } = req.body

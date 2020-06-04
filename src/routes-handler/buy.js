@@ -2,35 +2,43 @@ const getStream = require('into-stream');
 
 const buyCollection = require('../db/models/buySchema')
 
-const {getBlobName, containerName, blobService, getFileUrl} = require('../azure')
+const { containerNameDocs, blobService, getDocURL} = require('../azure')
+const { createPDF } = require('../pdf');
+const { sendEmail } = require('../nodemailer');
 
 const postBuy = (req, res) => {
     try{
         const { files } = req
         const { name, weight, section, date, total } = req.body
-        let newBuy = {}
+        let photoBuffer = null
+        let signBuffer = null
         for(let i = 0; i < files.length; i++){
-            let blobName = getBlobName(files[i].originalname)
-            let stream = getStream(files[i].buffer)
-            let streamLength = files[i].buffer.length
-            blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
-                if(err) {
-                    res.sendStatus(500)
-                    return;
-                }
-            });
-            if(files[i].originalname.split('_')[1] === "photo"){ newBuy.photo = getFileUrl(blobName) }
-            else{ newBuy.sign = getFileUrl(blobName) }
+            if(files[i].originalname.split('_')[1] === "photo"){ photoBuffer = files[i].buffer }
+            else{ signBuffer = files[i].buffer }
         }
-        newBuy.name = name
-        newBuy.weight = weight
-        newBuy.section = section
-        newBuy.date = date
-        newBuy.total = total
-        let buy = new buyCollection(newBuy)
-        buy.save()
-        res.json({ created: true, buy: newBuy })
+        createPDF(name, total, weight, date, signBuffer,  photoBuffer).then(({err, data}) => {
+            if(err){ console.log(err); return res.sendStatus(500) }
+            sendEmail(data, (fileName, path) => {
+                blobService.createBlockBlobFromLocalFile(containerNameDocs, fileName, path, (err, response) => {
+                    if(err){ console.log(err); return res.sendStatus(500) }
+                    let buy = new buyCollection({
+                        document: getDocURL(fileName),
+                        name,
+                        weight,
+                        section,
+                        date,
+                        total
+                    })
+                    buy.save()
+                    res.json({ created: true, buy })
+                })
+            })
+        }).catch(e => {
+            console.log(e)
+            res.sendStatus(500)
+        })
     }catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
 }
@@ -47,21 +55,22 @@ const getBuys = async (req, res) => {
 const deleteBuy = async (req, res) => {
     try{
         const buy = await buyCollection.findById(req.params.id)
-        blobService.deleteBlobIfExists(containerName, buy.photo.split('/')[4], (err, result) => {
+        blobService.deleteBlobIfExists(containerNameDocs, buy.photo.split('/')[4], (err, result) => {
             if(err) {
                 res.sendStatus(500)
                 return;
             }
         })
-        blobService.deleteBlobIfExists(containerName, buy.sign.split('/')[4], (err, result) => {
+        blobService.deleteBlobIfExists(containerNameDocs, buy.sign.split('/')[4], (err, result) => {
             if(err) {
-                res.sendStatus(500)
+                res.sendStatus(500) 
                 return;
             }
         })
         await buyCollection.findByIdAndRemove(req.params.id)
         res.json({ deleted: true, buy })
     }catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
 }

@@ -6,8 +6,7 @@ const buySchema = Schema({
     name: String,
     weight: Number,
     total: Number,
-    photo: String,
-    sign: String,
+    document: String,
     section: String,
     date: String
 })
