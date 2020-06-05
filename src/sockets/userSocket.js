@@ -3,7 +3,6 @@ const userCollection = require('../db/models/userSchema')
 
 const newTodo = (data, users, io) => {    
     const { todo, usersTodo } = data
-    console.log(data)
     for( let i = 0; i < usersTodo.length; i++){
         let index = users.findIndex( user => user.userName === usersTodo[i].userName )
         console.log(index)
