@@ -30,12 +30,12 @@ const createPDF = async (name, total, kg, date, sign, photo, callback) => {
         </style>
         <div style="display: flex">
             <h1 style="text-align: center; font-size: 12; margin-top: 1.5rem; color: rgb(91, 0, 104); font-family: Montserrat-SemiBold;" >KAFFEE</h1>
-            <h2 style="text-align: center;  font-size: 8; margin-top: 1.5rem; font-family: Montserrat-Light; margin-top: 0;" >RANCHO AGRÍCOLA LA GAVIA</h2>
-            <h3 style="text-align: center;  font-size: 10; margin-top: 1.5rem; font-family: Montserrat-SemiBold; margin-top: 0;" >COMPRA HIGO</h3>
+            <h2 style="text-align: center;  font-size: 8; margin-top: 0; font-family: Montserrat-Light; margin-top: 0;" >RANCHO AGRÍCOLA LA GAVIA</h2>
+            <h3 style="text-align: center;  font-size: 10; margin-top: 0; font-family: Montserrat-SemiBold; margin-top: 0;" >COMPRA HIGO</h3>
         </div>
         <div style="display: flex">
-            <img src="data:image/jpeg;base64,${base64photo}" style="height: 8rem; width: 8rem; margin: 0 auto; display: block"/>
-            <div style="width: 8rem; height: 0.5rem; margin: 0 auto; background-color: black;">
+            <img src="data:image/jpeg;base64,${base64photo}" style="height: 5rem; width: 5rem; margin: 0 auto; display: block"/>
+            <div style="width: 5rem; height: 0.5rem; margin: 0 auto; background-color: black;">
                 <p style="text-align: center; font-size: 5; width: 8rem; color: white; margin: auto 0; font-family: Montserrat-Light">Fecha ${date}</p>
             </div>
         </div>
