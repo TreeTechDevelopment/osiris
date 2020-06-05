@@ -7,11 +7,9 @@ const createPDF = async (name, total, kg, date, sign, photo, callback) => {
 
     let pathFontSemibold = path.resolve(__dirname, './assets/fonts/Montserrat-SemiBold.otf')
     pathFontSemibold = pathFontSemibold.replace(/\\/g, '/')
-    console.log(pathFontSemibold)
 
     let pathFontLight= path.resolve(__dirname, './assets/fonts/Montserrat-Light.otf')
     pathFontLight = pathFontLight.replace(/\\/g, '/')
-    console.log(pathFontLight)
 
     let base64photo = Buffer.from(photo).toString('base64')
     let signImage = await Jimp.read(sign)
