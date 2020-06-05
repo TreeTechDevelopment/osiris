@@ -3,13 +3,7 @@ const path = require('path')
 const Jimp = require('jimp');
 
 
-const createPDF = async (name, total, kg, date, sign, photo) => {
-    const pathDocument = path.resolve(__dirname, './assets/venta.pdf')
-    console.log(pathDocument)
-    let pathImage = path.resolve(__dirname, './assets/logo.png')
-    pathImage = `file:\\${pathImage}`
-    pathImage.replace(/\\/g, '\\\\')
-    console.log(pathImage)
+const createPDF = async (name, total, kg, date, sign, photo, callback) => {
 
     let pathFontSemibold = path.resolve(__dirname, './assets/fonts/Montserrat-SemiBold.otf')
     pathFontSemibold = pathFontSemibold.replace(/\\/g, '/')
@@ -62,16 +56,8 @@ const createPDF = async (name, total, kg, date, sign, photo) => {
         width: "5cm", 
         footer:{ height: "0cm" }
     }
-    let error = null
-    pdf.create(html, options).toFile(pathDocument, (err, res) => {
-        error = err
-        console.log('error PDF')
-        console.log(err)
-        console.log('res PDF')
-        console.log(res)
-    });
-    if (error){ return { err, data: null }}
-    return { err: null, data: {path: pathDocument, date} }
+
+    pdf.create(html, options).toBuffer((err, buf) => { callback(err, { doc: buf, date }) })
 }
 
 module.exports = {

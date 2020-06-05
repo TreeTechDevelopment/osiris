@@ -1,6 +1,5 @@
-const getStream = require('into-stream');
-
 const buyCollection = require('../db/models/buySchema')
+const getStream = require('into-stream');
 
 const { containerNameDocs, blobService, getDocURL} = require('../azure')
 const { createPDF } = require('../pdf');
@@ -16,10 +15,12 @@ const postBuy = (req, res) => {
             if(files[i].originalname.split('_')[1] === "photo"){ photoBuffer = files[i].buffer }
             else{ signBuffer = files[i].buffer }
         }
-        createPDF(name, total, weight, date, signBuffer,  photoBuffer).then(({err, data}) => {
+        createPDF(name, total, weight, date, signBuffer,  photoBuffer,(err, data) => {
             if(err){ console.log(err); return res.sendStatus(500) }
-            sendEmail(data, (fileName, path) => {
-                blobService.createBlockBlobFromLocalFile(containerNameDocs, fileName, path, (err, response) => {
+            sendEmail(data, (fileName, doc) => {
+                let stream = getStream(doc)
+                let streamLength = doc.length
+                blobService.createBlockBlobFromStream(containerNameDocs, fileName, stream, streamLength, (err, response) => {
                     if(err){ console.log(err); return res.sendStatus(500) }
                     let buy = new buyCollection({
                         document: getDocURL(fileName),
@@ -32,10 +33,7 @@ const postBuy = (req, res) => {
                     buy.save()
                     res.json({ created: true, buy })
                 })
-            })
-        }).catch(e => {
-            console.log(e)
-            res.sendStatus(500)
+            }, () => res.sendStatus(500))
         })
     }catch(e){
         console.log(e)

@@ -3,7 +3,7 @@ const { google } = require("googleapis");
 
 const OAuth2 = google.auth.OAuth2;
 
-const sendEmail = (data, callbackSuccess) => {
+const sendEmail = (data, callbackSuccess, errCallback) => {
     const oauth2Client = new OAuth2(
         process.env.GMAIL_CLIENT_ID,
         process.env.GMAIL_CLIENT_SECRET, 
@@ -20,8 +20,7 @@ const sendEmail = (data, callbackSuccess) => {
         text: "Nueva venta generada",
         attachments: [{
             filename: fileName,
-            path: data.path,
-            contentType: 'application/pdf'
+            content: data.doc
         }]
     }
     const smtpTransport = nodemailer.createTransport({
@@ -37,8 +36,8 @@ const sendEmail = (data, callbackSuccess) => {
         tls:{ rejectUnauthorized: false }
    }); 
    smtpTransport.sendMail(mailOptions, (err, res) => {
-        if (err) { return console.log(err) }
-        callbackSuccess(fileName, data.path)
+        if (err) { return errCallback() }
+        callbackSuccess(fileName, data.doc)
         smtpTransport.close()
     });
 }
