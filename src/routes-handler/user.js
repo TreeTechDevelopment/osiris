@@ -248,20 +248,24 @@ const updatewoPhoto = async (req, res) => {
 
 const createNewTodo = async (req,res) => {
     try{
-        const {task} = req.body
-        const {title, description, plants, plantsAlreadyOrdenated, userName } = task 
+        console.log('Sin Media')
+        let {title, description, plants, plantsAlreadyOrdenated, userName } = req.body 
+        plants = JSON.parse(plants)
         if(plantsAlreadyOrdenated){
             let user = await userCollection.findOne({ 'userName': userName })
             let todos = user.todos
             let todo = description + `\nPlantas: ${plantsAlreadyOrdenated}`
-            todos.push({
+            let todoObject = {
                 title,
                 todo,
                 status: false
-            })
+            }
+            todos.push(todoObject)
             user.save()
-            res.status(200).json({ done: true, user })
+            res.status(200).json({ todo: todoObject, users: [user] })
         }else{
+            let todoObject = {}
+            let usersResponse = []
             for(let i = 0; i < plants.length; i++){
                 let todo = description + `\nPlantas:`
                 let users = await userCollection.find({ 'section': plants[i].section })
@@ -270,54 +274,63 @@ const createNewTodo = async (req,res) => {
                 }        
                 for(let j = 0; j < users.length; j++){
                     let todos = users[j].todos
-                    todos.push({
+                    todoObject = {
                         title,
                         todo,
-                        status: false
-                    })
+                        status: false,
+                        imgs: []
+                    }
+                    todos.push(todoObject)
+                    usersResponse.push(users[j])
                     users[j].todos = todos
                     users[j].save()
                 }
             }
-            res.status(200).json({ done: true })
+            res.status(200).json({ todo: todoObject, users: usersResponse })
         }
     }catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
 }
 
 const createNewTodowMedia = async (req,res) => {
-    const files = req.files
-    let media = []
-    for(let i = 0; i < files.length; i++){
-        let blobName = getBlobName(files[i].originalname)
-        let stream = getStream(files[i].buffer)
-        let streamLength = files[i].buffer.length
-        media.push({ uri: getFileUrl(blobName) })
-        blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
-            if(err) {
-                res.sendStatus(500)
-                return;
-            }
-
-        }); 
-    }
+    
     try{
-        const {title, description, plants, plantsAlreadyOrdenated, userName } = req.body
+        const files = req.files
+        let media = []
+        for(let i = 0; i < files.length; i++){
+            let blobName = getBlobName(files[i].originalname)
+            let stream = getStream(files[i].buffer)
+            let streamLength = files[i].buffer.length
+            media.push({ uri: getFileUrl(blobName) })
+            blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
+                if(err) {
+                    res.sendStatus(500)
+                    return;
+                }
+
+            }); 
+        }
+        let {title, description, plants, plantsAlreadyOrdenated, userName } = req.body
+        plants = JSON.parse(plants)
         if(plantsAlreadyOrdenated){
             let user = await userCollection.findOne({ 'userName': userName })
             let todos = user.todos
             let todo = description + `\nPlantas: ${plantsAlreadyOrdenated}`
-            todos.push({
+            let todoObject = {
                 title,
                 todo,
                 status: false,
                 imgs: media
-            })
+            }
+            todos.push(todoObject)
             user.todos = todos
             user.save()            
-            res.status(200).json({ done: true, user })
+            res.status(200).json({ todo: todoObject, users: [user] })
         }else{
+            let usersResponse = []
+            let todoObject = {}
             for(let i = 0; i < plants.length; i++){
                 let todo = description + `\nPlantas:`
                 let users = await userCollection.find({ 'section': plants[i].section })
@@ -326,20 +339,23 @@ const createNewTodowMedia = async (req,res) => {
                 }        
                 for(let j = 0; j < users.length; j++){
                     let todos = users[j].todos
-                    todos.push({
+                    todoObject = {
                         title,
                         todo,
                         status: false,
                         imgs: media
-                    })
+                    }
+                    todos.push(todoObject)
+                    usersResponse.push(users[j])
                     users[j].todos = todos
                     users[j].save()
                 }
             }
-            res.status(200).json({ done: true })
+            res.status(200).json({ todo: todoObject, users: usersResponse })
         }
     }catch(e){
-        res.status(200).json({ done: false })
+        console.log(e)
+        res.sendStatus(500)
     }
 }
 

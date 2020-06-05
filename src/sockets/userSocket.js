@@ -2,10 +2,16 @@
 const userCollection = require('../db/models/userSchema')
 
 const newTodo = (data, users, io) => {    
-    let index = users.findIndex( user => user.userName === data.userName )
-    if(index >= 0){ 
-        io.to(`${users[index].socketId}`).emit('newTodo')
+    const { todo, usersTodo } = data
+    console.log(data)
+    for( let i = 0; i < usersTodo.length; i++){
+        let index = users.findIndex( user => user.userName === usersTodo[i].userName )
+        console.log(index)
+        if(index >= 0){ 
+            io.to(`${users[index].socketId}`).emit('newTodo', { todo }) 
+        }
     }
+    
 }
 
 const alertPosition = async (data, users, io) => {

@@ -18,7 +18,7 @@ const checkDate = (date, checkFrom, checkTo) => {
 
 const missingPlantsFormatted = (serialNumbers) => {
     let missingPLants = []
-    let serialNumbersSorted = serialNumbers.sort( (a,b) => a - b )
+    let serialNumbersSorted = serialNumbers.sort( (a,b) => a - b ) 
     let initialValue = serialNumbersSorted[0]    
     let lastValue = ''
     for(let i = 0; i < serialNumbersSorted.length - 1; i++){

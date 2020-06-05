@@ -46,12 +46,14 @@ const createSection = async (req,res) => {
                 return res.status(400).send('Ya existe algúna sección que tiene asignada alguna de las plantas ingresadas.')
             }
         }
+        const plantFrom = numberToSerialNumber(plants.split('-')[0])
+        const plantTo = numberToSerialNumber(plants.split('-')[1])
         let date = moment(checkDateFrom, 'DD/MM/YYYY').add(28, 'day').toDate()
         let dateFormated = moment(date).format('DD/MM/YYYY')
         let newSection = new sectionCollection({
             sectionName,
             coordinates,
-            plants: `${numberToSerialNumber(plants.split('-')[0])}-${numberToSerialNumber(plants.split('-')[1])}`,
+            plants: `${plantFrom}-${plantTo}`,
             owner,
             employees,
             checkDateFrom,
@@ -62,6 +64,7 @@ const createSection = async (req,res) => {
             employee.section = sectionName
             employee.save()
         }
+        await plantCollection.updateMany({ 'serialNumber': {$gte: plantFrom, $lte: plantTo  }}, { 'section': sectionName })
         newSection.save((err, newSection) => {
             if(err){
                 return res.status(400).send('Ya existe algúna sección con el mismo nombre. Este dato tiene que ser único.')

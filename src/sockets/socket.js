@@ -6,9 +6,7 @@ module.exports = (io) => {
 
     let users = []      
 
-    io.on('connection', (socket) => {   
-
-        console.log('user connected', socket.id)  
+    io.on('connection', (socket) => {    
 
         socket.emit('userConnected', (data) => {
             let index = users.findIndex( user => user.userName === data.userName )
@@ -57,8 +55,6 @@ module.exports = (io) => {
         socket.on('alertPosition', (data) => { alertPosition(data, users, io) })
 
         socket.on('disconnect' , () => {
-            console.log('disconnected')
-
             let index = users.findIndex( user => user.socketId === socket.id )
             users.splice(index,1)
             
