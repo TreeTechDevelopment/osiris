@@ -411,9 +411,20 @@ const deleteTodo = async (req,res)=> {
         todos.splice(index,1)
         user.todos = todos       
         user.save()
+        todos.forEach( todo => {
+            for(let i = 0; i < todo.imgs.lenght; i++){
+                blobService.deleteBlobIfExists(containerName, todo.imgs[i].split('/')[4], (err, result) => {
+                    if(err) {
+                        res.sendStatus(500)
+                        return; 
+                    }
+                })
+            }
+        })
         delete user.password
-        res.status(200).json({user}) 
+        res.status(200).json({user: [user]}) 
     }catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
     
