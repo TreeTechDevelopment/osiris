@@ -5,15 +5,19 @@ const Jimp = require('jimp');
 
 const createPDF = async (name, total, kg, date, sign, photo) => {
     const pathDocument = path.resolve(__dirname, './assets/venta.pdf')
+    console.log(pathDocument)
     let pathImage = path.resolve(__dirname, './assets/logo.png')
     pathImage = `file:\\${pathImage}`
     pathImage.replace(/\\/g, '\\\\')
+    console.log(pathImage)
 
     let pathFontSemibold = path.resolve(__dirname, './assets/fonts/Montserrat-SemiBold.otf')
     pathFontSemibold = pathFontSemibold.replace(/\\/g, '/')
+    console.log(pathFontSemibold)
 
     let pathFontLight= path.resolve(__dirname, './assets/fonts/Montserrat-Light.otf')
     pathFontLight = pathFontLight.replace(/\\/g, '/')
+    console.log(pathFontLight)
 
     let base64photo = Buffer.from(photo).toString('base64')
     let signImage = await Jimp.read(sign)
@@ -59,7 +63,13 @@ const createPDF = async (name, total, kg, date, sign, photo) => {
         footer:{ height: "0cm" }
     }
     let error = null
-    pdf.create(html, options).toFile(pathDocument, (err, res) => error = err);
+    pdf.create(html, options).toFile(pathDocument, (err, res) => {
+        error = err
+        console.log('error PDF')
+        console.log(err)
+        console.log('res PDF')
+        console.log(res)
+    });
     if (error){ return { err, data: null }}
     return { err: null, data: {path: pathDocument, date} }
 }
