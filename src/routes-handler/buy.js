@@ -53,15 +53,9 @@ const getBuys = async (req, res) => {
 const deleteBuy = async (req, res) => {
     try{
         const buy = await buyCollection.findById(req.params.id)
-        blobService.deleteBlobIfExists(containerNameDocs, buy.photo.split('/')[4], (err, result) => {
+        blobService.deleteBlobIfExists(containerNameDocs, buy.doc.split('/')[4], (err, result) => {
             if(err) {
                 res.sendStatus(500)
-                return;
-            }
-        })
-        blobService.deleteBlobIfExists(containerNameDocs, buy.sign.split('/')[4], (err, result) => {
-            if(err) {
-                res.sendStatus(500) 
                 return;
             }
         })
