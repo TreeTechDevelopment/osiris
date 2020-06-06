@@ -81,7 +81,7 @@ const login = async (req, res) => {
 const updateUserwPhoto = async (req, res) => {
     try{
         let { file } = req
-        let { id, userName, name, address, section } = req.body
+        let { id, userName, name, address, section, plants } = req.body 
         let user = await userCollection.findById(id)
         let blobName = ''
         if(user.photo.split('/')[4]){
@@ -151,7 +151,7 @@ const createUser = async (req, res) => {
 
     try{
         let { file } = req
-        let { userName, name, address, section, plants, password, rol } = req.body
+        let { userName, name, address, plants, password, rol } = req.body
 
         let blobName = getBlobName(file.originalname)
         let stream = getStream(file.buffer)
@@ -178,7 +178,6 @@ const createUser = async (req, res) => {
             let plantTo = numberToSerialNumber(plants.split('-')[1])
             newUser.plants = `${plantFrom}-${plantTo}`
             newUser.missingPlants = `${plantFrom}-${plantTo}`
-            newUser.section = section
         }
 
         let user = new userCollection(newUser)

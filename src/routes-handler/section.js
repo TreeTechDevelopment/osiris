@@ -50,6 +50,8 @@ const createSection = async (req,res) => {
         const plantTo = numberToSerialNumber(plants.split('-')[1])
         let date = moment(checkDateFrom, 'DD/MM/YYYY').add(28, 'day').toDate()
         let dateFormated = moment(date).format('DD/MM/YYYY')
+        const res = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=Lerdo&units=metric&appid=${process.env.OPENWEATHERMAP_KEY}`)       
+        const temperature = res.data.main.temp
         let newSection = new sectionCollection({
             sectionName,
             coordinates,
@@ -57,7 +59,8 @@ const createSection = async (req,res) => {
             owner,
             employees,
             checkDateFrom,
-            checkDateTo: dateFormated
+            checkDateTo: dateFormated,
+            temperature
         })
         for(let j = 0; j < employees.length; j++){
             let employee = await userCollection.findById(employees[j].idEmployee)
@@ -76,7 +79,7 @@ const createSection = async (req,res) => {
     }
 }
 
-const updateSection = async (req, res) => {
+const updateSection = async (req, res) => { 
     try{
         const { id } = req.params
         const { coordinates, sectionName, employees, plants, owner, checkDateFrom } = req.body
