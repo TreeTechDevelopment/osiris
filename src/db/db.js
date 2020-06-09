@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 //const PDFDocument = require('pdfkit');
 
 const moment = require('moment')
-const Collection = require('./models/plantSchema')
+const Collection = require('./models/chatSchema')
 
 const { createPDF } =require('../pdf')
 
@@ -71,6 +71,5 @@ mongoose.connect(process.env.DB, {
         console.log(plants)
         console.log(plants.length) */  
         
-
     }) 
     .catch((err) => {console.log(err)}) 

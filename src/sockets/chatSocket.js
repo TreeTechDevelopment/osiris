@@ -30,13 +30,15 @@ const messageToManager = async (data , users, io) => {
         chatCreated.push({ 
             date: data.date,
             message: data.message,
-            userName: data.userName                       
+            userName: data.userName,
+            typeMessage: data.typeMessage                   
         })   
         chat.chat =  chatCreated
         chatToSend = { 
             date: data.date,
             message: data.message,
-            userName: data.userName                       
+            userName: data.userName,
+            typeMessage: data.typeMessage
         }
         chat.save()
     }else{
@@ -46,13 +48,15 @@ const messageToManager = async (data , users, io) => {
             chat: [{ 
                 date: data.date,
                 message: data.message,
-                userName: data.userName                       
+                userName: data.userName,
+                typeMessage: data.typeMessage                 
             }]
         })         
         chatToSend = { 
             date: data.date,
             message: data.message,
-            userName: data.userName                       
+            userName: data.userName,
+            typeMessage: data.typeMessage                  
         }
         newChat.save()
     }
@@ -77,7 +81,8 @@ const messageFromManager = async (data, users, io) => {
     chatCreated.push({ 
         date: data.date,
         message: data.message,
-        userName: data.userName                       
+        userName: data.userName   ,
+        typeMessage: data.typeMessage                       
     })   
     chat.chat =  chatCreated
     chat.save()
@@ -90,5 +95,5 @@ const messageFromManager = async (data, users, io) => {
 module.exports = {
     getChat,
     messageToManager,
-    messageFromManager
+    messageFromManager,
 }

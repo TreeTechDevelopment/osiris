@@ -48,7 +48,7 @@ module.exports = (io) => {
 
         socket.on('messageFromManager', (data) => { messageFromManager(data, users, io) })         
         
-        socket.on('messageToManager', (data) => { messageToManager(data, users, io) })
+        socket.on('messageToManager', (data) => { messageToManager(data, users, io) })        
 
         socket.on('newTodo', (data) => { newTodo(data, users, io) })
 

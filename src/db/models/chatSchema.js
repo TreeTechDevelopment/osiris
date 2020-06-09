@@ -12,7 +12,8 @@ const chatSchema = Schema({
         days: {
             type: Number,
             default: 1
-        } 
+        },
+        typeMessage: String
     }], 
 })
 

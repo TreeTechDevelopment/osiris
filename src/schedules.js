@@ -9,6 +9,8 @@ const chatCollection = require('./db/models/chatSchema')
 
 const { checkDate, missingPlantsFormatted, numberToSerialNumber } = require('./helpers');
 
+const { containerName, blobService} = require('./azure')
+
 const jobGetWeather = new CronJob('0 */30 * * * *', () => {
     axios.get(`https://api.openweathermap.org/data/2.5/weather?q=Lerdo&units=metric&appid=${process.env.OPENWEATHERMAP_KEY}`)
         .then((res) => {
@@ -63,6 +65,21 @@ const jobCheckEmployeeDone = new CronJob('0 0 3 */1 * *', async () => {
 });
 
 const jobCheckChat = new CronJob('0 10 3 */1 * *', async () => {
+//const jobCheckChat = new CronJob('0 */1 * * * *', async () => {
+    let chats = await chatCollection.find({})
+    for(let i = 0; i < chats.length; i++){
+        let chat = chats[i].chat
+        for(let j = 0; j < chat.length; j++){
+            if(chat[j].days === 3 && chat[j].typeMessage === "audio"){
+                blobService.deleteBlobIfExists(containerName, chat[j].message.split('/')[4], (err, result) => {
+                    if(err) {
+                        console.log(err)
+                        return;
+                    }
+                })
+            }
+        }
+    }
     await chatCollection.updateMany({}, { '$pull': { 'chat':  { 'days': 3 } } })
     await chatCollection.updateMany({}, { '$inc': {'chat.$[].days': 1}  })
 });

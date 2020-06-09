@@ -393,6 +393,23 @@ const deleteUser = async (req,res)=> {
             let indexEmployeeInSection = section.employees.findIndex( employee => employee.idEmployee = id )
             section.employees.splice(indexEmployeeInSection, 1)
             section.save()
+        }if(user.rol === "employee"){
+            let chatFromUser = await chatCollection.findOne({ 'from': user.userName })
+            if(chatFromUser){
+                let chat = chatFromUser.chat
+                for(let j = 0; j < chat.length; j++){
+                    if(chat[j].typeMessage === "audio"){
+                        blobService.deleteBlobIfExists(containerName, chat[j].message.split('/')[4], (err, result) => {
+                            if(err) {
+                                console.log(err)
+                                return;
+                            }
+                        })
+                    }
+                }
+                await chatCollection.findOneAndRemove({ 'from': user.userName })
+            }
+
         }
         await userCollection.findByIdAndRemove(id)
         res.sendStatus(200)
@@ -452,6 +469,26 @@ const getTemperature = async (req, res) => {
     }catch(e){ res.sendStatus(500) }
 }
 
+const sendAudio = async (req, res) => {
+    try{
+        const { file } = req
+        let blobName = getBlobName(file.originalname)
+        let stream = getStream(file.buffer)
+        let streamLength = file.buffer.length
+        blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
+            if(err) {
+                res.sendStatus(500)
+                return;
+            }
+
+        }); 
+        res.json({ audioURI: getFileUrl(blobName) })
+    }catch(e){
+        console.log(e)
+        res.sendStatus(500)
+    }
+}
+
 module.exports = {
     getUsers,
     login,
@@ -464,5 +501,6 @@ module.exports = {
     deleteTodo,
     finisReading,
     createNewTodowMedia,
-    getTemperature
+    getTemperature,
+    sendAudio
 }
