@@ -65,6 +65,8 @@ const createSection = async (req,res) => {
         for(let j = 0; j < employees.length; j++){
             let employee = await userCollection.findById(employees[j].idEmployee)
             employee.section = sectionName
+            employee.plants = employees[j].plants
+            employee.missingPlants = employees[j].plants
             employee.save()
         }
         await plantCollection.updateMany({ 'serialNumber': {$gte: plantFrom, $lte: plantTo  }}, { 'section': sectionName })
@@ -107,6 +109,8 @@ const updateSection = async (req, res) => {
         for(let j = 0; j < employees.length; j++){
             let employee = await userCollection.findById(employees[j].idEmployee)
             employee.section = sectionName
+            employee.plants = employees[j].plants
+            employee.missingPlants = employees[j].plants
             employee.save()
         }
         let finalNumber = plants.split('-')[1]

@@ -21,7 +21,8 @@ const {
     finisReading,
     createNewTodowMedia,
     getTemperature,
-    sendAudio
+    sendAudio,
+    updatePassword
 } = require('../routes-handler/user')
 
 router.get('/', tokenValidation, getUsers)
@@ -35,6 +36,7 @@ router.post('/audio', tokenValidation, upload.single('audio'), sendAudio)
 
 router.put('/updatewphoto', tokenValidation, upload.single('photo'), updateUserwPhoto)
 router.put('/update', tokenValidation, updatewoPhoto)
+router.put('/password', tokenValidation, updatePassword)
 router.put('/completeTodo', tokenValidation, completeTodo)
 router.put('/finishReading', tokenValidation, finisReading)
 

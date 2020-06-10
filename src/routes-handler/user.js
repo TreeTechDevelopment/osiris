@@ -140,9 +140,7 @@ const updateUserwPhoto = async (req, res) => {
             delete newUser.password
             res.status(200).json({ user: newUser })
         })
-    }catch(e){
-        console.log('COn foto')
-        console.log(e)
+    }catch(e){        
         res.sendStatus(500)
     }
 }
@@ -151,7 +149,7 @@ const createUser = async (req, res) => {
 
     try{
         let { file } = req
-        let { userName, name, address, plants, password, rol } = req.body
+        let { userName, name, address, password, rol } = req.body
 
         let blobName = getBlobName(file.originalname)
         let stream = getStream(file.buffer)
@@ -171,13 +169,6 @@ const createUser = async (req, res) => {
             address,
             rol,
             photo: getFileUrl(blobName)
-        }
-
-        if(rol === 'employee'){
-            let plantFrom = numberToSerialNumber(plants.split('-')[0])
-            let plantTo = numberToSerialNumber(plants.split('-')[1])
-            newUser.plants = `${plantFrom}-${plantTo}`
-            newUser.missingPlants = `${plantFrom}-${plantTo}`
         }
 
         let user = new userCollection(newUser)
@@ -238,22 +229,19 @@ const updatewoPhoto = async (req, res) => {
             delete newUser.password
             res.status(200).json({ user: newUser })
         })
-    }catch(e){
-        console.log('Sin foto')
-        console.log(e)
+    }catch(e){        
         res.sendStatus(500)
     }
 }
 
 const createNewTodo = async (req,res) => {
-    try{
-        console.log('Sin Media')
+    try{        
         let {title, description, plants, plantsAlreadyOrdenated, userName } = req.body 
-        plants = JSON.parse(plants)
         if(plantsAlreadyOrdenated){
             let user = await userCollection.findOne({ 'userName': userName })
+            if(!user){ return res.status(400).send('Este usuario ya no existe.') }
             let todos = user.todos
-            let todo = description + `\nPlantas: ${plantsAlreadyOrdenated}`
+            let todo = description
             let todoObject = {
                 title,
                 todo,
@@ -263,6 +251,7 @@ const createNewTodo = async (req,res) => {
             user.save()
             res.status(200).json({ todo: todoObject, users: [user] })
         }else{
+            plants = JSON.parse(plants)
             let todoObject = {}
             let usersResponse = []
             for(let i = 0; i < plants.length; i++){
@@ -288,7 +277,7 @@ const createNewTodo = async (req,res) => {
             res.status(200).json({ todo: todoObject, users: usersResponse })
         }
     }catch(e){
-        console.log(e)
+
         res.sendStatus(500)
     }
 }
@@ -298,25 +287,26 @@ const createNewTodowMedia = async (req,res) => {
     try{
         const files = req.files
         let media = []
-        for(let i = 0; i < files.length; i++){
-            let blobName = getBlobName(files[i].originalname)
-            let stream = getStream(files[i].buffer)
-            let streamLength = files[i].buffer.length
-            media.push({ uri: getFileUrl(blobName) })
-            blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
-                if(err) {
-                    res.sendStatus(500)
-                    return;
-                }
-
-            }); 
-        }
         let {title, description, plants, plantsAlreadyOrdenated, userName } = req.body
-        plants = JSON.parse(plants)
+        
         if(plantsAlreadyOrdenated){
             let user = await userCollection.findOne({ 'userName': userName })
+            if(!user){ return res.status(400).send('Este usuario ya no existe.') }
+            for(let i = 0; i < files.length; i++){
+                let blobName = getBlobName(files[i].originalname)
+                let stream = getStream(files[i].buffer)
+                let streamLength = files[i].buffer.length
+                media.push({ uri: getFileUrl(blobName) })
+                blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
+                        if(err) {
+                            res.sendStatus(500)
+                            return;
+                        }
+
+                }); 
+            }
             let todos = user.todos
-            let todo = description + `\nPlantas: ${plantsAlreadyOrdenated}`
+            let todo = description 
             let todoObject = {
                 title,
                 todo,
@@ -328,6 +318,7 @@ const createNewTodowMedia = async (req,res) => {
             user.save()            
             res.status(200).json({ todo: todoObject, users: [user] })
         }else{
+            plants = JSON.parse(plants)
             let usersResponse = []
             let todoObject = {}
             for(let i = 0; i < plants.length; i++){
@@ -335,25 +326,39 @@ const createNewTodowMedia = async (req,res) => {
                 let users = await userCollection.find({ 'section': plants[i].section })
                 for(let j = 0; j < plants[i].number.length; j++){
                     todo += `\n${plants[i].number[j]}`
+                }
+                for(let i = 0; i < files.length; i++){
+                    let blobName = getBlobName(files[i].originalname)
+                    let stream = getStream(files[i].buffer)
+                    let streamLength = files[i].buffer.length
+                    media.push({ uri: getFileUrl(blobName) })
+                    blobService.createBlockBlobFromStream(containerName, blobName, stream, streamLength, err => {
+                        if(err) {
+                            res.sendStatus(500)
+                            return;
+                        }
+        
+                    }); 
                 }        
                 for(let j = 0; j < users.length; j++){
-                    let todos = users[j].todos
-                    todoObject = {
-                        title,
-                        todo,
-                        status: false,
-                        imgs: media
+                    if(users[j]){
+                        let todos = users[j].todos
+                        todoObject = {
+                            title,
+                            todo,
+                            status: false,
+                            imgs: media
+                        }
+                        todos.push(todoObject)
+                        usersResponse.push(users[j])
+                        users[j].todos = todos
+                        users[j].save()
                     }
-                    todos.push(todoObject)
-                    usersResponse.push(users[j])
-                    users[j].todos = todos
-                    users[j].save()
                 }
             }
             res.status(200).json({ todo: todoObject, users: usersResponse })
         }
-    }catch(e){
-        console.log(e)
+    }catch(e){        
         res.sendStatus(500)
     }
 }
@@ -439,8 +444,7 @@ const deleteTodo = async (req,res)=> {
         })
         delete user.password
         res.status(200).json({user: [user]}) 
-    }catch(e){
-        console.log(e)
+    }catch(e){        
         res.sendStatus(500)
     }
     
@@ -483,8 +487,21 @@ const sendAudio = async (req, res) => {
 
         }); 
         res.json({ audioURI: getFileUrl(blobName) })
+    }catch(e){        
+        res.sendStatus(500)
+    }
+}
+
+const updatePassword = async (req, res) => {
+    try{
+        const { password, id } = req.body
+        let user = await userCollection.findById(id)
+        let passwordHashed = user.generateHash(password)
+        user.password = passwordHashed
+        user.save()
+        delete user.password
+        res.json({ user })
     }catch(e){
-        console.log(e)
         res.sendStatus(500)
     }
 }
@@ -502,5 +519,6 @@ module.exports = {
     finisReading,
     createNewTodowMedia,
     getTemperature,
-    sendAudio
+    sendAudio,
+    updatePassword
 }
