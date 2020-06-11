@@ -7,10 +7,7 @@ const mongoose = require('mongoose');
 //const brandedQRCode = require('branded-qr-code')
 //const PDFDocument = require('pdfkit');
 
-const moment = require('moment')
-const Collection = require('./models/plantSchema')
-
-const { createPDF } =require('../pdf')
+const Collection = require('./models/userSchema')
 
 mongoose.connect(process.env.DB, {
     useNewUrlParser: true, 
@@ -19,6 +16,5 @@ mongoose.connect(process.env.DB, {
     useCreateIndex: true})
     .then(async (db) => {
         console.log('DB connected') 
-        
     }) 
     .catch((err) => {console.log(err)}) 

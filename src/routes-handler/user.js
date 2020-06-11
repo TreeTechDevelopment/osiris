@@ -16,13 +16,13 @@ const getUsers  = async (req,res)=> {
         const { rol, sections, section, rol2 } = req.query
         let users = []
         if(rol2){
-            let owners = await userCollection.find({ 'rol': rol2 }, 'name userName rol')
-            let employees = await userCollection.find({ 'rol': rol }, 'name userName rol plants section plantsToDisplay')
+            let owners = await userCollection.find({ 'rol': rol2 }, 'name userName rol nPlants')
+            let employees = await userCollection.find({ 'rol': rol }, 'name userName rol plants section plantsToDisplay nPlants')
             res.json({ employees, owners })
             return
         }
-        if(section){ users = await userCollection.find({ 'rol': rol, 'section': section }, 'section name userName rol todos plantsToDisplay') }
-        else{ users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol plantsToDisplay') }
+        if(section){ users = await userCollection.find({ 'rol': rol, 'section': section }, 'section name userName rol todos plantsToDisplay nPlants') }
+        else{ users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol plantsToDisplay nPlants') }
         if(sections){
             let sections = await sectionCollection.find({})
             res.status(200).json({ users, sections }) 
@@ -146,7 +146,7 @@ const updateUserwPhoto = async (req, res) => {
                 const plantsOwned = await plantCollection.find({ 'owned': true }).sort({ serialNumber: 1 })            
             
                 let initialPlant = plantsOwned.length + 1
-                let finalPlant = Number(newUser.plants) + plantsOwned.length - Number(lastValuePlants)
+                let finalPlant = Number(newUser.nPlants) + plantsOwned.length - Number(lastValuePlants)
 
                 initialPlant = numberToSerialNumber(initialPlant)
                 finalPlant = numberToSerialNumber(finalPlant)
@@ -250,8 +250,8 @@ const updatewoPhoto = async (req, res) => {
         let lastValuePlants
 
         if(plants){ 
-            lastValuePlants = newUser.nPlants
-            newUser.nPlants = plants 
+            lastValuePlants = user.nPlants
+            user.nPlants = plants 
         }
 
         user.userName = userName
@@ -267,7 +267,7 @@ const updatewoPhoto = async (req, res) => {
                 const plantsOwned = await plantCollection.find({ 'owned': true }).sort({ serialNumber: 1 })            
             
                 let initialPlant = plantsOwned.length + 1
-                let finalPlant = Number(newUser.plants) + plantsOwned.length - Number(lastValuePlants)
+                let finalPlant = Number(newUser.nPlants) + plantsOwned.length - Number(lastValuePlants)
 
                 initialPlant = numberToSerialNumber(initialPlant)
                 finalPlant = numberToSerialNumber(finalPlant)
@@ -281,7 +281,8 @@ const updatewoPhoto = async (req, res) => {
             delete newUser.password
             res.status(200).json({ user: newUser })
         })
-    }catch(e){        
+    }catch(e){     
+        console.log(e)   
         res.sendStatus(500)
     }
 }
