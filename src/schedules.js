@@ -29,16 +29,23 @@ const jobCheckEmployeeDone = new CronJob('0 0 3 */1 * *', async () => {
         const employees = await userCollection.find({ 'rol': 'employee' })
         for(let i = 0; i < employees.length; i++){
 
-            let plantFrom = numberToSerialNumber(employees[i].plants.split('-')[0])
-            let plantTo = numberToSerialNumber(employees[i].plants.split('-')[1])
+            let plantFrom = numberToSerialNumber(employees[i].plantsToDisplay.split('-')[0])
+            let plantTo = numberToSerialNumber(employees[i].plantsToDisplay.split('-')[1])
 
             let section = await sectionCollection.findOne({ 'sectionName': employees[i].section })
+
             if(section){
+
+                let plantsOwner = await plantCollection.find({ 'owner': section.owner }).sort({ serialNumber: 1 })
 
                 let dateCheckFrom = moment(moment(section.checkDateFrom, 'DD/MM/YYYY').subtract(1, 'day').toDate()).format('DD/MM/YYYY')
                 let dateCheckTo = moment(moment(section.checkDateTo, 'DD/MM/YYYY').add(1, 'day').toDate()).format('DD/MM/YYYY')
 
-                let plants = await plantCollection.find({ 'serialNumber': { $gte: plantFrom, $lte: plantTo } })
+                let plants = []
+
+                for(let j = Number(plantFrom) - 1; j < Number(plantTo); j++){
+                    plants.push( plantsOwner[j] )
+                }
 
                 let missingPlants = []
 

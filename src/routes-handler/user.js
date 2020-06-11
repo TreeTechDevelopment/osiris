@@ -17,12 +17,12 @@ const getUsers  = async (req,res)=> {
         let users = []
         if(rol2){
             let owners = await userCollection.find({ 'rol': rol2 }, 'name userName rol')
-            let employees = await userCollection.find({ 'rol': rol }, 'name userName rol plants section')
+            let employees = await userCollection.find({ 'rol': rol }, 'name userName rol plants section plantsToDisplay')
             res.json({ employees, owners })
             return
         }
-        if(section){ users = await userCollection.find({ 'rol': rol, 'section': section }, 'section name userName rol todos') }
-        else{ users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol') }
+        if(section){ users = await userCollection.find({ 'rol': rol, 'section': section }, 'section name userName rol todos plantsToDisplay') }
+        else{ users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol plantsToDisplay') }
         if(sections){
             let sections = await sectionCollection.find({})
             res.status(200).json({ users, sections }) 
@@ -125,18 +125,35 @@ const updateUserwPhoto = async (req, res) => {
                 chats[i].save()
             }
         }
+
+        let lastValuePlants
+        if(plants){ 
+            lastValuePlants = newUser.nPlants
+            newUser.nPlants = plants 
+        }
+
         user.userName = userName
         user.name = name
         user.photo = getFileUrl(blobName)
         user.address = address
-        if(section){ user.section = section }
-        if(plants){ user.plants = plants }
-        user.save((err, newUser) => {
+        
+        user.save(async (err, newUser) => {
             if(err){
                 return res.status(400).send('Ya existe algún empleado con el mismo usuario. Este dato tiene que ser único.')
             }
             
+            if(newUser.rol === "owner"){
+                const plantsOwned = await plantCollection.find({ 'owned': true }).sort({ serialNumber: 1 })            
             
+                let initialPlant = plantsOwned.length + 1
+                let finalPlant = Number(newUser.plants) + plantsOwned.length - Number(lastValuePlants)
+
+                initialPlant = numberToSerialNumber(initialPlant)
+                finalPlant = numberToSerialNumber(finalPlant)
+
+                await plantCollection.updateMany({ 'serialNumber': { $gte : initialPlant, $lte :finalPlant } }, { 'owned': true, 'owner': newUser._id })
+            }
+
             delete newUser.password
             res.status(200).json({ user: newUser })
         })
@@ -149,7 +166,7 @@ const createUser = async (req, res) => {
 
     try{
         let { file } = req
-        let { userName, name, address, password, rol } = req.body
+        let { userName, name, address, password, rol, plants } = req.body
 
         let blobName = getBlobName(file.originalname)
         let stream = getStream(file.buffer)
@@ -171,12 +188,14 @@ const createUser = async (req, res) => {
             photo: getFileUrl(blobName)
         }
 
+        if(plants){ newUser.nPlants = plants }
+
         let user = new userCollection(newUser)
 
         let passwordHashed = user.generateHash(password)
         user.password = passwordHashed
 
-        user.save((err, newUser) => {
+        user.save(async (err, newUser) => {
             if(err){
                 blobService.deleteBlobIfExists(containerName, blobName, (err, result) => {
                     if(err) {
@@ -185,6 +204,18 @@ const createUser = async (req, res) => {
                     }
                 })
                 return res.status(400).send('Ya existe algún empleado con el mismo usuario. Este dato tiene que ser único.')
+            }
+
+            if(newUser.rol === "owner"){
+                const plantsOwned = await plantCollection.find({ 'owned': true }).sort({ serialNumber: 1 })            
+            
+                let initialPlant = plantsOwned.length + 1
+                let finalPlant = Number(newUser.nPlants) + plantsOwned.length
+
+                initialPlant = numberToSerialNumber(initialPlant)
+                finalPlant = numberToSerialNumber(finalPlant)
+
+                await plantCollection.updateMany({ 'serialNumber': { $gte : initialPlant, $lte :finalPlant } }, { 'owned': true, 'owner': newUser._id })
             }
             
             
@@ -215,15 +246,36 @@ const updatewoPhoto = async (req, res) => {
                 chats[i].save()
             }
         }
+
+        let lastValuePlants
+
+        if(plants){ 
+            lastValuePlants = newUser.nPlants
+            newUser.nPlants = plants 
+        }
+
         user.userName = userName
         user.name = name
         user.address = address
-        if(section){ user.section = section }
-        if(plants){ user.plants = plants }
-        user.save((err, newUser) => {
+              
+        user.save( async(err, newUser) => {
             if(err){
                 return res.status(400).send('Ya existe algún empleado con el mismo usuario. Este dato tiene que ser único.')
             }
+
+            if(newUser.rol === "owner"){
+                const plantsOwned = await plantCollection.find({ 'owned': true }).sort({ serialNumber: 1 })            
+            
+                let initialPlant = plantsOwned.length + 1
+                let finalPlant = Number(newUser.plants) + plantsOwned.length - Number(lastValuePlants)
+
+                initialPlant = numberToSerialNumber(initialPlant)
+                finalPlant = numberToSerialNumber(finalPlant)
+
+                await plantCollection.updateMany({ 'serialNumber': { $gte : initialPlant, $lte :finalPlant } }, { 'owned': true, 'owner': newUser._id })
+            }
+
+
             
             
             delete newUser.password

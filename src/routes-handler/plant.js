@@ -2,33 +2,23 @@ const getStream = require('into-stream');
 const moment = require('moment')
 
 const {getBlobName, containerName, blobService, getFileUrl} = require('../azure')
-const { numberToSerialNumber } = require('../helpers')
 
 const plantCollection = require('../db/models/plantSchema');
 
 const getPlant = async (req, res) => {
-    const { id, from, to, plantsUser } = req.query    
+    const { id, plantsUser } = req.query    
     if(id){
-        let plantFrom = numberToSerialNumber(plantsUser.split('-')[0])
-        let plantTo = numberToSerialNumber(plantsUser.split('-')[1])
+        let plants = plantsUser.split(',')        
         let plant = await plantCollection.findById(id)
         if(plant){
-            if(plantFrom <= plant.serialNumber && plantTo >= plant.serialNumber){
-                res.status(200).json({plant, status: true})
-            }else{
-                res.status(400).send('No tienes permiso para leer este código')
-            }
+            const idx = plants.findIndex( plantID => plantID === id )
+            if(idx >= 0){ res.status(200).json({plant, status: true}) }
+            else{ res.status(400).send('No tienes permiso para leer este código') }
         }else{
             res.status(400).send('Este código no puede ser leído por esta aplicación')
         }
     }else{
-        let plants = [] 
-        for(let i = from; i < to; i++){
-            let serialNumber = numberToSerialNumber(i)
-            let plant = await plantCollection.findOne({ 'serialNumber': serialNumber })
-            plants.push(plant)
-        }
-        res.status(200).json({plants, status: false}) 
+        res.sendStatus(500)
     }   
 }
 
@@ -38,12 +28,12 @@ const getPLantsReported = async (req,res) => {
 }
 
 const getSpecificPlant = async (req,res) => {
-    const { serialNumber, width, widthType, height, heightType, numberFruits, numberFruitsType, section, reported } = req.query
+    const { serialNumber, width, widthType, height, heightType, numberFruits, numberFruitsType, section, reported, ownerID } = req.query
     let plants = []
-    let queryObject = {}
+    let queryObject = { owner: ownerID }
     if(serialNumber !== ''){
-        let number = numberToSerialNumber(serialNumber)
-        plants = await plantCollection.find({ 'serialNumber': number })        
+        const plantsFound = await plantCollection.find({ 'owner': ownerID }).sort({ serialNumber: 1 })   
+        plants = [plantsFound[Number(serialNumber)-1]]
     }else{        
         if(width !== ""){
             if(widthType === 'more'){

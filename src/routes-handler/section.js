@@ -1,4 +1,5 @@
-const moment = require('moment')
+const moment = require('moment');
+const axios = require('axios');
 
 const sectionCollection = require('../db/models/sectionsSchema');
 const plantCollection = require('../db/models/plantSchema');
@@ -14,19 +15,13 @@ const getSections = async (req, res) => {
 const getInfoSection = async (req, res) => {
     let { id } = req.query
     let section = await sectionCollection.findById(id)
-    let initialPlant = section.plants.split('-')[0]
-    let finalPlant = section.plants.split('-')[1]
-    let finalP = ''
-    let initialP = ''
-    if(parseInt(initialPlant) >= 1){ initialP = `000${parseInt(initialPlant)}` }
-    if(parseInt(initialPlant) >= 10){ initialP = `00${parseInt(initialPlant)}` }
-    if(parseInt(initialPlant) >= 100){ initialP = `0${parseInt(initialPlant)}` }
-    if(parseInt(initialPlant) >= 1000){ initialP = `${parseInt(initialPlant)}` }
-    if(parseInt(finalPlant) >= 1){ finalP = `000${parseInt(finalPlant)}` }
-    if(parseInt(finalPlant) >= 10){ finalP = `00${parseInt(finalPlant)}` }
-    if(parseInt(finalPlant) >= 100){ finalP = `0${parseInt(finalPlant)}` }
-    if(parseInt(finalPlant) >= 1000){ finalP = `${parseInt(finalPlant)}` }
-    let plants = await plantCollection.find({ 'serialNumber': {$lte: finalP, $gte: initialP} })
+    const plantsOwner = await plantCollection.find({ owner: section.owner }).sort({ serialNumber: 1 })    
+    const initialPlant = section.plants.split('-')[0]
+    const finalPlant = section.plants.split('-')[1]    
+    let plants = []
+    for(let i = Number(initialPlant) - 1; i < Number(finalPlant); i++){
+        plants.push( plantsOwner[i] )
+    }
     let employees = []
     for(let i = 0; i < section.employees.length; i++){
         let employee = await userCollection.findById(section.employees[i].idEmployee)
@@ -39,19 +34,25 @@ const createSection = async (req,res) => {
     try{
         const { coordinates, sectionName, employees, plants, owner, checkDateFrom } = req.body
         coordinates.forEach((coordinate) => { delete coordinate._id })
-        let sections = await sectionCollection.find({})
+        let sections = await sectionCollection.find({ owner })
+        const plantsOwner = await plantCollection.find({ owner }).sort({ serialNumber: 1 })
+
         for(let i = 0; i < sections.length; i++){
             if((Number(sections[i].plants.split('-')[0]) <= Number(plants.split('-')[0]) && Number(sections[i].plants.split('-')[1]) >= Number(plants.split('-')[0])) ||
             (Number(sections[i].plants.split('-')[0]) <= Number(plants.split('-')[1]) && Number(sections[i].plants.split('-')[1]) >= Number(plants.split('-')[1]))){
                 return res.status(400).send('Ya existe algúna sección que tiene asignada alguna de las plantas ingresadas.')
             }
         }
-        const plantFrom = numberToSerialNumber(plants.split('-')[0])
-        const plantTo = numberToSerialNumber(plants.split('-')[1])
+
+        let plantFrom = numberToSerialNumber(plants.split('-')[0])
+        let plantTo = numberToSerialNumber(plants.split('-')[1])
+
         let date = moment(checkDateFrom, 'DD/MM/YYYY').add(28, 'day').toDate()
         let dateFormated = moment(date).format('DD/MM/YYYY')
-        const res = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=Lerdo&units=metric&appid=${process.env.OPENWEATHERMAP_KEY}`)       
-        const temperature = res.data.main.temp
+
+        const resWeather = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=Lerdo&units=metric&appid=${process.env.OPENWEATHERMAP_KEY}`)       
+        const temperature = resWeather.data.main.temp
+
         let newSection = new sectionCollection({
             sectionName,
             coordinates,
@@ -62,21 +63,35 @@ const createSection = async (req,res) => {
             checkDateTo: dateFormated,
             temperature
         })
-        for(let j = 0; j < employees.length; j++){
-            let employee = await userCollection.findById(employees[j].idEmployee)
-            employee.section = sectionName
-            employee.plants = employees[j].plants
-            employee.missingPlants = employees[j].plants
-            employee.save()
-        }
-        await plantCollection.updateMany({ 'serialNumber': {$gte: plantFrom, $lte: plantTo  }}, { 'section': sectionName })
-        newSection.save((err, newSection) => {
+        newSection.save(async (err, newSection) => {
             if(err){
                 return res.status(400).send('Ya existe algúna sección con el mismo nombre. Este dato tiene que ser único.')
+            }
+            for(let j = 0; j < employees.length; j++){
+                let plantFrom = numberToSerialNumber(employees[j].plants.split('-')[0])
+                let plantTo = numberToSerialNumber(employees[j].plants.split('-')[1])
+    
+                let plantsToEmployee = []
+    
+                for(let k = Number(plantFrom) - 1; k < Number(plantTo); k++){
+                    plantsToEmployee.push( plantsOwner[ k ]._id )
+                }
+    
+                let employee = await userCollection.findById(employees[j].idEmployee)
+                employee.section = sectionName
+                employee.plantsToDisplay = `${plantFrom}-${plantTo}`
+                employee.plants = plantsToEmployee
+                employee.missingPlants = `${plantFrom}-${plantTo}`
+                employee.save()
+            }
+            for(let i = Number(plantFrom) - 1; i < Number(plantTo); i++ ){
+                plantsOwner[i].section = sectionName
+                plantsOwner[i].save()
             }
             res.json({ updated: true })
         })
     }catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
 }
@@ -85,7 +100,7 @@ const updateSection = async (req, res) => {
     try{
         const { id } = req.params
         const { coordinates, sectionName, employees, plants, owner, checkDateFrom } = req.body
-        let sections = await sectionCollection.find({})
+        let sections = await sectionCollection.find({ owner })
         for(let i = 0; i < sections.length; i++){
             if(sections[i]._id != id){
                 if((Number(sections[i].plants.split('-')[0]) >= Number(plants.split('-')[0]) && Number(sections[i].plants.split('-')[0]) <= Number(plants.split('-')[1])) ||
@@ -94,6 +109,11 @@ const updateSection = async (req, res) => {
                 }
             }
         }
+        const plantsOwner = await plantCollection.find({ owner }).sort({ serialNumber: 1 })
+
+        let plantFrom = numberToSerialNumber(plants.split('-')[0])
+        let plantTo = numberToSerialNumber(plants.split('-')[1])
+
         let date = moment(checkDateFrom, 'DD/MM/YYYY').add(28, 'day').toDate()
         let dateFormated = moment(date).format('DD/MM/YYYY')
         let section = await sectionCollection.findById(id)
@@ -102,34 +122,34 @@ const updateSection = async (req, res) => {
         section.coordinates = coordinates
         section.sectionName = sectionName
         section.employees = employees
-        section.plants = `${numberToSerialNumber(plants.split('-')[0])}-${numberToSerialNumber(plants.split('-')[1])}`
+        section.plants = `${plantFrom}-${plantTo}`
         section.checkDateFrom = checkDateFrom
         section.checkDateTo = dateFormated
         section.save()
         for(let j = 0; j < employees.length; j++){
+            let plantFrom = numberToSerialNumber(employees[j].plants.split('-')[0])
+            let plantTo = numberToSerialNumber(employees[j].plants.split('-')[1])
+
+            let plantsToEmployee = []
+
+            for(let k = Number(plantFrom) - 1; k < Number(plantTo); k++){
+                plantsToEmployee.push( plantsOwner[ k ]._id )
+            }
+
             let employee = await userCollection.findById(employees[j].idEmployee)
             employee.section = sectionName
-            employee.plants = employees[j].plants
-            employee.missingPlants = employees[j].plants
+            employee.plantsToDisplay = `${plantFrom}-${plantTo}`
+            employee.plants = plantsToEmployee
+            employee.missingPlants = `${plantFrom}-${plantTo}`
             employee.save()
         }
-        let finalNumber = plants.split('-')[1]
-        let initialNumber = plants.split('-')[0]
-        let fni = parseInt(finalNumber)
-        let ini = parseInt(initialNumber)
-        let finalN = '';
-        let initialN = '';
-        if(fni >= 1){ finalN = `000${fni}` }
-        if(fni >= 10){ finalN = `00${fni}` }
-        if(fni >= 100){ finalN = `0${fni}` }
-        if(fni >= 1000){ finalN = `${fni}` }
-        if(ini >= 1){ initialN = `000${ini}` }
-        if(ini >= 10){ initialN = `00${ini}` }
-        if(ini >= 100){ initialN = `0${ini}` }
-        if(ini >= 1000){ initialN = `${ini}` }
-        await plantCollection.updateMany({ 'serialNumber': {$lte: finalN, $gte: initialN} }, { section: sectionName })       
+        for(let i = Number(plantFrom) - 1; i < Number(plantTo); i++ ){
+            plantsOwner[i].section = sectionName
+            plantsOwner[i].save()
+        }
         res.json({ updated: true })
     }catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
 }

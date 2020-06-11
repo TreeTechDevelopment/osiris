@@ -29,7 +29,7 @@ const sections = Schema({
         withoutPlague: Number
     },
     checkDateFrom : String,
-    checkDateTo: String
+    checkDateTo: String    
 })
 
 module.exports = mongoose.model('sections', sections);
