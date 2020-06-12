@@ -207,15 +207,27 @@ const createUser = async (req, res) => {
             }
 
             if(newUser.rol === "owner"){
-                const plantsOwned = await plantCollection.find({ 'owned': true }).sort({ serialNumber: 1 })            
-            
-                let initialPlant = plantsOwned.length + 1
-                let finalPlant = Number(newUser.nPlants) + plantsOwned.length
+                
+                let difference = Number(newUser.nPlants) - Number(lastValuePlants)
 
-                initialPlant = numberToSerialNumber(initialPlant)
-                finalPlant = numberToSerialNumber(finalPlant)
+                if(difference > 0){
+                    let plantsOwned = await plantCollection.find({ 'owned': true }).sort({ serialNumber: 1 })
 
-                await plantCollection.updateMany({ 'serialNumber': { $gte : initialPlant, $lte :finalPlant } }, { 'owned': true, 'owner': newUser._id })
+                    let initialPlant = plantsOwned.length + 1
+                    let finalPlant = plantsOwned.length + difference
+
+                    initialPlant = numberToSerialNumber(initialPlant)
+                    finalPlant = numberToSerialNumber(finalPlant)
+                    
+                    await plantCollection.updateMany({ 'serialNumber': { $gte : initialPlant, $lte :finalPlant } }, { 'owned': true, 'owner': newUser._id })
+                }else if(difference < 0){
+                    let plantsOwned = await plantCollection.find({ 'owner': newUser._id }).sort({ serialNumber: 1 })
+
+                    for(let i = Number(newUser.nPlants) - 1; i < plantsOwned.length; i++){
+                        plantsOwned[i].owned = false
+                        plantsOwned[i].save()
+                    }
+                }
             }
             
             
