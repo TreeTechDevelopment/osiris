@@ -16,6 +16,7 @@ const getInfoSection = async (req, res) => {
     let { id } = req.query
     let section = await sectionCollection.findById(id)
     const plantsOwner = await plantCollection.find({ owner: section.owner }).sort({ serialNumber: 1 })    
+    console.log(plantsOwner)
     const initialPlant = section.plants.split('-')[0]
     const finalPlant = section.plants.split('-')[1]    
     let plants = []
@@ -125,23 +126,25 @@ const updateSection = async (req, res) => {
         section.plants = `${plantFrom}-${plantTo}`
         section.checkDateFrom = checkDateFrom
         section.checkDateTo = dateFormated
-        section.save()
+        section.save()        
         for(let j = 0; j < employees.length; j++){
-            let plantFrom = numberToSerialNumber(employees[j].plants.split('-')[0])
-            let plantTo = numberToSerialNumber(employees[j].plants.split('-')[1])
-
-            let plantsToEmployee = []
-
-            for(let k = Number(plantFrom) - 1; k < Number(plantTo); k++){
-                plantsToEmployee.push( plantsOwner[ k ]._id )
+            if(employees[j].plants){
+                let plantFrom = numberToSerialNumber(employees[j].plants.split('-')[0])
+                let plantTo = numberToSerialNumber(employees[j].plants.split('-')[1])
+    
+                let plantsToEmployee = []
+    
+                for(let k = Number(plantFrom) - 1; k < Number(plantTo); k++){
+                    plantsToEmployee.push( plantsOwner[ k ]._id )
+                }
+    
+                let employee = await userCollection.findById(employees[j].idEmployee)
+                employee.section = sectionName
+                employee.plantsToDisplay = `${plantFrom}-${plantTo}`
+                employee.plants = plantsToEmployee
+                employee.missingPlants = `${plantFrom}-${plantTo}`
+                employee.save()
             }
-
-            let employee = await userCollection.findById(employees[j].idEmployee)
-            employee.section = sectionName
-            employee.plantsToDisplay = `${plantFrom}-${plantTo}`
-            employee.plants = plantsToEmployee
-            employee.missingPlants = `${plantFrom}-${plantTo}`
-            employee.save()
         }
         for(let i = Number(plantFrom) - 1; i < Number(plantTo); i++ ){
             plantsOwner[i].section = sectionName

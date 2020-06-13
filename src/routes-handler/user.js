@@ -17,7 +17,7 @@ const getUsers  = async (req,res)=> {
         let users = []
         if(rol2){
             let owners = await userCollection.find({ 'rol': rol2 }, 'name userName rol nPlants')
-            let employees = await userCollection.find({ 'rol': rol }, 'name userName rol plants section plantsToDisplay nPlants')
+            let employees = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol plantsToDisplay nPlants')
             res.json({ employees, owners })
             return
         }
@@ -178,7 +178,13 @@ const createUser = async (req, res) => {
                 return;
             }
 
-        });    
+        });   
+
+        let lastValuePlants
+        if(plants){ 
+            lastValuePlants = user.nPlants
+            user.nPlants = plants 
+        } 
 
         let newUser = {
             userName,
@@ -188,14 +194,12 @@ const createUser = async (req, res) => {
             photo: getFileUrl(blobName)
         }
 
-        if(plants){ newUser.nPlants = plants }
-
         let user = new userCollection(newUser)
 
         let passwordHashed = user.generateHash(password)
         user.password = passwordHashed
 
-        user.save(async (err, newUser) => {
+        user.save(async (err, newUserDB) => {
             if(err){
                 blobService.deleteBlobIfExists(containerName, blobName, (err, result) => {
                     if(err) {
@@ -206,36 +210,36 @@ const createUser = async (req, res) => {
                 return res.status(400).send('Ya existe algún empleado con el mismo usuario. Este dato tiene que ser único.')
             }
 
-            if(newUser.rol === "owner"){
+            if(newUserDB.rol === "owner"){
                 
-                let difference = Number(newUser.nPlants) - Number(lastValuePlants)
+                let difference = Number(newUserDB.nPlants) - Number(lastValuePlants)
 
                 if(difference > 0){
-                    let plantsOwned = await plantCollection.find({ 'owned': true }).sort({ serialNumber: 1 })
+                    let plantsOwned = await Collection.find({ 'owned': false }).sort({ serialNumber: 1 })
 
-                    let initialPlant = plantsOwned.length + 1
-                    let finalPlant = plantsOwned.length + difference
-
-                    initialPlant = numberToSerialNumber(initialPlant)
-                    finalPlant = numberToSerialNumber(finalPlant)
-                    
-                    await plantCollection.updateMany({ 'serialNumber': { $gte : initialPlant, $lte :finalPlant } }, { 'owned': true, 'owner': newUser._id })
+                    for( let i = 0; i < difference; i++ ){
+                        plantsOwned[i].owned = true
+                        plantsOwned[i].owner = newUser._id
+                        plantsOwned[i].save()
+                    }
                 }else if(difference < 0){
                     let plantsOwned = await plantCollection.find({ 'owner': newUser._id }).sort({ serialNumber: 1 })
 
-                    for(let i = Number(newUser.nPlants) - 1; i < plantsOwned.length; i++){
+                    for(let i = Number(newUserDB.nPlants) - 1; i < plantsOwned.length; i++){
                         plantsOwned[i].owned = false
                         plantsOwned[i].save()
                     }
                 }
+            
             }
             
             
-            delete newUser.password
-            res.status(200).json({ user: newUser })
+            delete newUserDB.password
+            res.json({ user: newUserDB })
         })
 
     }catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
 
@@ -280,15 +284,13 @@ const updatewoPhoto = async (req, res) => {
                 let difference = Number(newUser.nPlants) - Number(lastValuePlants)
 
                 if(difference > 0){
-                    let plantsOwned = await plantCollection.find({ 'owned': true }).sort({ serialNumber: 1 })
+                    let plantsOwned = await Collection.find({ 'owned': false }).sort({ serialNumber: 1 })
 
-                    let initialPlant = plantsOwned.length + 1
-                    let finalPlant = plantsOwned.length + difference
-
-                    initialPlant = numberToSerialNumber(initialPlant)
-                    finalPlant = numberToSerialNumber(finalPlant)
-                    
-                    await plantCollection.updateMany({ 'serialNumber': { $gte : initialPlant, $lte :finalPlant } }, { 'owned': true, 'owner': newUser._id })
+                    for( let i = 0; i < difference; i++ ){
+                        plantsOwned[i].owned = true
+                        plantsOwned[i].owner = newUser._id
+                        plantsOwned[i].save()
+                    }
                 }else if(difference < 0){
                     let plantsOwned = await plantCollection.find({ 'owner': newUser._id }).sort({ serialNumber: 1 })
 
@@ -300,9 +302,6 @@ const updatewoPhoto = async (req, res) => {
             
             }
 
-
-            
-            
             delete newUser.password
             res.status(200).json({ user: newUser })
         })
