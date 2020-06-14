@@ -6,9 +6,10 @@ const {getBlobName, containerName, blobService, getFileUrl} = require('../azure'
 const plantCollection = require('../db/models/plantSchema');
 
 const getPlant = async (req, res) => {
-    const { id, plantsUser } = req.query    
+    const { id } = req.query
+    const { plantsUser } = req.body
     if(id){
-        let plants = plantsUser.split(',')        
+        let plants = plantsUser
         let plant = await plantCollection.findById(id)
         if(plant){
             const idx = plants.findIndex( plantID => plantID === id )

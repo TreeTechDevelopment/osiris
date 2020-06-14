@@ -16,7 +16,6 @@ const {
     updatePlants
 } = require('../routes-handler/plant');
 
-router.get('/', getPlant)
 router.get('/reports', getPLantsReported) 
 router.get('/specific', getSpecificPlant)
 router.get('/section', getPlantBySection)
@@ -25,6 +24,7 @@ router.post('/report',upload.array('reports', 3), reportPlant )
 
 router.put('/', updatePlant)
 router.put('/update', updatePlants)
+router.put('/get', getPlant)
 
 router.delete('/deleteReport', deleteReport)
 
