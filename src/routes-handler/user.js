@@ -22,10 +22,10 @@ const getUsers  = async (req,res)=> {
             return
         }
         if(section){ 
-            let section = await sectionCollection.findOne({ 'sectionName': section })
-            for(let i = 0; i < section.employees.length; i++){
-                let user = await userCollection.findById(section.employees[i], 'section name userName rol todos plantsToDisplay nPlants')
-                users.push(user)
+            let sectionDB = await sectionCollection.findOne({ 'sectionName': section })
+            users = await userCollection.find({ 'section': sectionDB._id }, 'name userName photo address plants section todos rol plantsToDisplay nPlants')
+            for(let i = 0; i < users.length; i++){
+                users[i].section = sectionDB.sectionName
             }
         }
         else{ users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol plantsToDisplay nPlants') }
@@ -36,6 +36,7 @@ const getUsers  = async (req,res)=> {
         }    
         res.json({ users })
     }catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
 }
@@ -54,19 +55,9 @@ const login = async (req, res) => {
                 let token = jwt.sign(payload, process.env.JWT_SEED , { expiresIn: 60 * 60 * 24 });
                 token = `${process.env.TOKEN_HEADER} ${token}`
                 if(user.rol === "employee"){
-                    let coordinates = []
-                    let sections = await sectionCollection.find({})
-                    let missingPlants = ''
-                    for(let i = 0; i < sections.length; i++){
-                        
-                        let index = sections[i].employees.findIndex( employee =>  employee.idEmployee == user._id )
-                        if(index >= 0){ 
-                            coordinates.push( sections[i].coordinates ) 
-                            let missPlantObj = user.missingPlants.find( missPlantObj => missPlantObj.section == sections[i]._id )
-                            missingPlants += `SECCIÓN ${sections[i].sectionName}: ${missPlantObj.plants}`
-                        }
-                    }
-                    if(coordinates.length === 0){ return res.status(400).send('Este usuario no está asignado a ninguna sección. Un administrador debe .') }
+                    
+                    let section = await sectionCollection.findById(user.section)
+                    if(!section){ return res.status(400).send('Este usuario no está asignado a ninguna sección. Un administrador debe .') }
                     
                     let userResponse = {
                         userName, 
@@ -74,8 +65,8 @@ const login = async (req, res) => {
                         todos:user.todos, 
                         plants: user.plants, 
                         id: user._id, 
-                        missingPlants,
-                        section: coordinates
+                        missingPlants: user.missingPlants,
+                        section: section.coordinates
                     }
                     res.json({ logged: true, user: userResponse, token }) 
                 }else if(user.rol === "manager"){                
@@ -486,14 +477,14 @@ const deleteUser = async (req,res)=> {
             })
         }
         if(user.rol === "employee"){
-            let sections = await sectionCollection.find({})
-            for(let i = 0; i < sections.length; i++){
-                let index = sections[i].employees.findIndex(employee => employee.idEmployee == id)
+            let section = await sectionCollection.findById(user.section)
+            if(section){
+                let index = section.employees.findIndex(employee => employee.idEmployee == id)
                 if(index >= 0){
-                    let newEmployees = sections[i].employees
+                    let newEmployees = section.employees
                     newEmployees.splice(index, 1)
-                    sections[i].employees = newEmployees
-                    sections[i].save()
+                    section.employees = newEmployees
+                    section.save()
                 }
             }
             let chatFromUser = await chatCollection.findOne({ 'from': user.userName })
@@ -518,6 +509,7 @@ const deleteUser = async (req,res)=> {
         await userCollection.findByIdAndRemove(id)
         res.sendStatus(200)
     }catch(e){
+        console.log(e)
         res.sendStatus(500)
     }
 }

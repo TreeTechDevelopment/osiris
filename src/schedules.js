@@ -26,62 +26,82 @@ const jobGetWeather = new CronJob('0 */30 * * * *', () => {
 const jobCheckEmployeeDone = new CronJob('0 0 3 */1 * *', async () => {
 //const jobCheckEmployeeDone = new CronJob('0 */1 * * * *', async () => {
     try{
-        const sections = await sectionCollection.find({})
+        const employees = await userCollection.find({ 'rol': 'employee' })
 
-        for(let i = 0; i < sections.length; i++){
+        for(let i = 0; i < employees.length; i++){
 
-            let plantsOwner = await plantCollection.find({ 'owner': sections[i].owner }).sort({ serialNumber: 1 })
+            let section = await sectionCollection.findById(employees[i].section)
 
-            let dateCheckFrom = moment(moment(sections[i].checkDateFrom, 'DD/MM/YYYY').subtract(1, 'day').toDate()).format('DD/MM/YYYY')
-            let dateCheckTo = moment(moment(sections[i].checkDateTo, 'DD/MM/YYYY').add(1, 'day').toDate()).format('DD/MM/YYYY')
+            let plantsOwner = await plantCollection.find({ 'owner': section.owner }).sort({ serialNumber: 1 })
 
-            sections.employees.forEach( async (employeeObj) => {
-                let employee = await userCollection.findById(employeeObj.idEmployee)
+            let dateCheckFrom = moment(moment(section.checkDateFrom, 'DD/MM/YYYY').subtract(1, 'day').toDate()).format('DD/MM/YYYY')
+            let dateCheckTo = moment(moment(section.checkDateTo, 'DD/MM/YYYY').add(1, 'day').toDate()).format('DD/MM/YYYY')            
 
-                let plantFrom = numberToSerialNumber(employee.plantsToDisplay.split('-')[0])
-                let plantTo = numberToSerialNumber(employee.plantsToDisplay.split('-')[1])                
+            let plantFrom = numberToSerialNumber(employees[i].plantsToDisplay.split('-')[0])
+            let plantTo = numberToSerialNumber(employees[i].plantsToDisplay.split('-')[1])                
 
-                let plants = []
+            let plants = []
 
-                for(let j = Number(plantFrom) - 1; j < Number(plantTo); j++){
-                    plants.push( plantsOwner[j] )
-                }
+            for(let j = Number(plantFrom) - 1; j < Number(plantTo); j++){
+                plants.push( plantsOwner[j] )
+            }
 
-                let missingPlants = []
+            let missingPlants = []
 
-                for(let j = 0; j < plants.length; j++){
-                    if(plants[j].lastUpdate){
-                        if(!checkDate(plants[j].lastUpdate, dateCheckFrom, dateCheckTo)){
-                            missingPlants.push(plants[j].serialNumber)
-                        }
-                    }else{
+            for(let j = 0; j < plants.length; j++){
+                if(plants[j].lastUpdate){
+                    if(!checkDate(plants[j].lastUpdate, dateCheckFrom, dateCheckTo)){
                         missingPlants.push(plants[j].serialNumber)
                     }
+                }else{
+                    missingPlants.push(plants[j].serialNumber)
                 }
-
-                let newMissinsplants = employee.missingPlants
-                let index = newMissinsplants.findIndex( missPlantObj => missPlantObj.section == sections[i]._id )
-                newMissinsplants[index].plants = missingPlantsFormatted(missingPlants)
-                
-                employee.missingPlants = newMissinsplants
-                employee.save()
-            })
-
-            let count = 0
-
-            for(let j = 0; j < plantsOwner.length; j++){
-                if(plants[j].lastUpdate){
-                    if(!checkDate(plants[j].lastUpdate, dateCheckFrom, dateCheckTo)){ count++ }
-                }else{ count++ }
             }
-            if(count === 0){
-                sections[i].finishRead = true
-                sections[i].save()
-            }
+            
+            employees[i].missingPlants = missingPlantsFormatted(missingPlants)
+            employees[i].save()
            
         }
     }catch(e){ console.log(e) }
 });
+
+const jobCheckSectionDone = new CronJob('0 40 3 */1 * *', async () => {
+    //const jobCheckEmployeeDone = new CronJob('0 */1 * * * *', async () => {
+        try{
+            const sections = await sectionCollection.find({})
+    
+            for(let i = 0; i < sections.length; i++){
+    
+                let plantsOwner = await plantCollection.find({ 'owner': sections[i].owner }).sort({ serialNumber: 1 })
+    
+                let dateCheckFrom = moment(moment(sections[i].checkDateFrom, 'DD/MM/YYYY').subtract(1, 'day').toDate()).format('DD/MM/YYYY')
+                let dateCheckTo = moment(moment(sections[i].checkDateTo, 'DD/MM/YYYY').add(1, 'day').toDate()).format('DD/MM/YYYY')            
+    
+                let plantFrom = numberToSerialNumber(sections[i].plants.split('-')[0])
+                let plantTo = numberToSerialNumber(sections[i].plants.split('-')[1])                
+    
+                let plants = []
+    
+                for(let j = Number(plantFrom) - 1; j < Number(plantTo); j++){
+                    plants.push( plantsOwner[j] )
+                }
+    
+                let count = 0
+    
+                for(let j = 0; j < plants.length; j++){
+                    if(plants[j].lastUpdate){
+                        if(!checkDate(plants[j].lastUpdate, dateCheckFrom, dateCheckTo)){ count++ }
+                    }else{ count++ }
+                }
+                
+                if(count === 0){
+                    sections[i].finishRead = true
+                    sections[i].save()
+                }
+               
+            }
+        }catch(e){ console.log(e) }
+    });
 
 const jobCheckChat = new CronJob('0 10 3 */1 * *', async () => {
 //const jobCheckChat = new CronJob('0 */1 * * * *', async () => {
@@ -154,6 +174,7 @@ const jobCheckDate = new CronJob('0 20 3 */1 * *', async () => {
 
 //jobKeepAwake.start()
 jobCheckEmployeeDone.start()
+jobCheckSectionDone.start()
 jobCheckDate.start()
 jobCheckChat.start()
 jobGetWeather.start()

@@ -16,7 +16,6 @@ const getInfoSection = async (req, res) => {
     let { id } = req.query
     let section = await sectionCollection.findById(id)
     const plantsOwner = await plantCollection.find({ owner: section.owner }).sort({ serialNumber: 1 })    
-    console.log(plantsOwner)
     const initialPlant = section.plants.split('-')[0]
     const finalPlant = section.plants.split('-')[1]    
     let plants = []
@@ -81,10 +80,8 @@ const createSection = async (req,res) => {
                 let employee = await userCollection.findById(employees[j].idEmployee)
                 employee.plantsToDisplay = `${plantFrom}-${plantTo}`
                 employee.plants = plantsToEmployee
-                let lastMissingplants = []
-                if(employee.missingPlants){ lastMissingplants = employee.missingPlants }
-                lastMissingplants.push({plants: `${plantFrom}-${plantTo}`, section: newSection._id})
-                employee.missingPlants = lastMissingplants
+                employee.section = newSection._id
+                employee.missingPlants = `${plantFrom}-${plantTo}`
                 employee.save()
             }
             for(let i = Number(plantFrom) - 1; i < Number(plantTo); i++ ){
@@ -143,10 +140,8 @@ const updateSection = async (req, res) => {
                 let employee = await userCollection.findById(employees[j].idEmployee)
                 employee.plantsToDisplay = `${plantFrom}-${plantTo}`
                 employee.plants = plantsToEmployee
-                let employeeMissingPlants = employee.missingPlants
-                let index = employeeMissingPlants.findIndex( missPlantObj => missPlantObj.section == section._id )
-                employeeMissingPlants[index].plants = `${plantFrom}-${plantTo}`
-                employee.missingPlants = employeeMissingPlants
+                employee.section = section._id
+                employee.missingPlants = `${plantFrom}-${plantTo}`
                 employee.save()
             }
         }

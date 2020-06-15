@@ -17,5 +17,6 @@ mongoose.connect(process.env.DB, {
     useCreateIndex: true})
     .then(async (db) => {
         console.log('DB connected')
+        
     }) 
     .catch((err) => {console.log(err)}) 
