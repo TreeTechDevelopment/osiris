@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
 //const PDFDocument = require('pdfkit');
 
 const plantCollection = require('./models/plantSchema')
+const userCollection = require('./models/userSchema')
 
 mongoose.connect(process.env.DB, {
     useNewUrlParser: true, 
@@ -15,6 +16,6 @@ mongoose.connect(process.env.DB, {
     useFindAndModify: false,
     useCreateIndex: true})
     .then(async (db) => {
-        console.log('DB connected') 
+        console.log('DB connected')
     }) 
     .catch((err) => {console.log(err)}) 

@@ -35,7 +35,10 @@ const userSchema = Schema({
     nPlants: String,
     plants: Array,
     plantsToDisplay: String,
-    missingPlants: String,
+    missingPlants: [{
+        section: String,
+        plants: String
+    }],
     meanReads: Number,
     photo: String,
     address: String

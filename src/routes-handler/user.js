@@ -56,18 +56,25 @@ const login = async (req, res) => {
                 if(user.rol === "employee"){
                     let coordinates = []
                     let sections = await sectionCollection.find({})
+                    let missingPlants = ''
                     for(let i = 0; i < sections.length; i++){
+                        
                         let index = sections[i].employees.findIndex( employee =>  employee.idEmployee == user._id )
-                        if(index >= 0){ coordinates.push( sections[i].coordinates ) }
+                        if(index >= 0){ 
+                            coordinates.push( sections[i].coordinates ) 
+                            let missPlantObj = user.missingPlants.find( missPlantObj => missPlantObj.section == sections[i]._id )
+                            missingPlants += `SECCIÓN ${sections[i].sectionName}: ${missPlantObj.plants}`
+                        }
                     }
                     if(coordinates.length === 0){ return res.status(400).send('Este usuario no está asignado a ninguna sección. Un administrador debe .') }
+                    
                     let userResponse = {
                         userName, 
                         rol: user.rol, 
                         todos:user.todos, 
                         plants: user.plants, 
                         id: user._id, 
-                        missingPlants: user.missingPlants,
+                        missingPlants,
                         section: coordinates
                     }
                     res.json({ logged: true, user: userResponse, token }) 
@@ -478,12 +485,17 @@ const deleteUser = async (req,res)=> {
                 }
             })
         }
-        let section = await sectionCollection.findOne({ 'sectionName': user.section })
-        if(section && user.rol === "employee"){
-            let indexEmployeeInSection = section.employees.findIndex( employee => employee.idEmployee = id )
-            section.employees.splice(indexEmployeeInSection, 1)
-            section.save()
-        }if(user.rol === "employee"){
+        if(user.rol === "employee"){
+            let sections = await sectionCollection.find({})
+            for(let i = 0; i < sections.length; i++){
+                let index = sections[i].employees.findIndex(employee => employee.idEmployee == id)
+                if(index >= 0){
+                    let newEmployees = sections[i].employees
+                    newEmployees.splice(index, 1)
+                    sections[i].employees = newEmployees
+                    sections[i].save()
+                }
+            }
             let chatFromUser = await chatCollection.findOne({ 'from': user.userName })
             if(chatFromUser){
                 let chat = chatFromUser.chat
@@ -554,8 +566,7 @@ const finisReading = async (req, res) => {
 
 const getTemperature = async (req, res) => {
     try{
-        let user = await userCollection.findById(req.query.userId)
-        let section = await sectionCollection.findOne({ 'sectionName': user.section })
+        let section = await sectionCollection.findOne({ })
         res.json({ temperature: section.temperature })
     }catch(e){ res.sendStatus(500) }
 }

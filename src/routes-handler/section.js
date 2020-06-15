@@ -81,7 +81,10 @@ const createSection = async (req,res) => {
                 let employee = await userCollection.findById(employees[j].idEmployee)
                 employee.plantsToDisplay = `${plantFrom}-${plantTo}`
                 employee.plants = plantsToEmployee
-                employee.missingPlants = `${plantFrom}-${plantTo}`
+                let lastMissingplants = []
+                if(employee.missingPlants){ lastMissingplants = employee.missingPlants }
+                lastMissingplants.push({plants: `${plantFrom}-${plantTo}`, section: newSection._id})
+                employee.missingPlants = lastMissingplants
                 employee.save()
             }
             for(let i = Number(plantFrom) - 1; i < Number(plantTo); i++ ){
@@ -140,7 +143,10 @@ const updateSection = async (req, res) => {
                 let employee = await userCollection.findById(employees[j].idEmployee)
                 employee.plantsToDisplay = `${plantFrom}-${plantTo}`
                 employee.plants = plantsToEmployee
-                employee.missingPlants = `${plantFrom}-${plantTo}`
+                let employeeMissingPlants = employee.missingPlants
+                let index = employeeMissingPlants.findIndex( missPlantObj => missPlantObj.section == section._id )
+                employeeMissingPlants[index].plants = `${plantFrom}-${plantTo}`
+                employee.missingPlants = employeeMissingPlants
                 employee.save()
             }
         }
