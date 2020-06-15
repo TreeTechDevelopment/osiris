@@ -31,7 +31,6 @@ const userSchema = Schema({
         lng: Number
     }],
     readToday: Boolean,
-    section: String,
     name: String,
     nPlants: String,
     plants: Array,

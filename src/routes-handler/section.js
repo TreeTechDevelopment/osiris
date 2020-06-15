@@ -79,7 +79,6 @@ const createSection = async (req,res) => {
                 }
     
                 let employee = await userCollection.findById(employees[j].idEmployee)
-                employee.section = sectionName
                 employee.plantsToDisplay = `${plantFrom}-${plantTo}`
                 employee.plants = plantsToEmployee
                 employee.missingPlants = `${plantFrom}-${plantTo}`
@@ -139,7 +138,6 @@ const updateSection = async (req, res) => {
                 }
     
                 let employee = await userCollection.findById(employees[j].idEmployee)
-                employee.section = sectionName
                 employee.plantsToDisplay = `${plantFrom}-${plantTo}`
                 employee.plants = plantsToEmployee
                 employee.missingPlants = `${plantFrom}-${plantTo}`

@@ -44,7 +44,7 @@ const createPDF = async (name, total, kg, date, sign, photo, callback) => {
             <div style="padding: 1rem 0">
                 <p style="text-align: center; font-size: 5;color: white; font-family: Montserrat-Light; margin: 0; height: 0.5rem">Nombre: ${name}</p>
                 <p style="text-align: center; font-size: 5;color: white; font-family: Montserrat-Light; margin: 0; height: 0.5rem">No. Kilo: ${kg}</p>
-                <p style="text-align: center; font-size: 5;color: white; font-family: Montserrat-Light; margin: 0; height: 0.5rem">Pago Totak: ${total}</p>            
+                <p style="text-align: center; font-size: 5;color: white; font-family: Montserrat-Light; margin: 0; height: 0.5rem">Pago Total: ${total}</p>            
             </div>
         </div>              
     `

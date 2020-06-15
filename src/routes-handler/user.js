@@ -21,7 +21,13 @@ const getUsers  = async (req,res)=> {
             res.json({ employees, owners })
             return
         }
-        if(section){ users = await userCollection.find({ 'rol': rol, 'section': section }, 'section name userName rol todos plantsToDisplay nPlants') }
+        if(section){ 
+            let section = await sectionCollection.findOne({ 'sectionName': section })
+            for(let i = 0; i < section.employees.length; i++){
+                let user = await userCollection.findById(section.employees[i], 'section name userName rol todos plantsToDisplay nPlants')
+                users.push(user)
+            }
+        }
         else{ users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol plantsToDisplay nPlants') }
         if(sections){
             let sections = await sectionCollection.find({})
@@ -48,8 +54,13 @@ const login = async (req, res) => {
                 let token = jwt.sign(payload, process.env.JWT_SEED , { expiresIn: 60 * 60 * 24 });
                 token = `${process.env.TOKEN_HEADER} ${token}`
                 if(user.rol === "employee"){
-                    let section = await sectionCollection.findOne({ 'sectionName': user.section })
-                    if(!section){ return res.status(400).send('Este usuario no está asignado a ninguna sección. Un administrador debe .') }
+                    let coordinates = []
+                    let sections = await sectionCollection.find({})
+                    for(let i = 0; i < sections.length; i++){
+                        let index = sections[i].employees.findIndex( employee =>  employee.idEmployee == user._id )
+                        if(index >= 0){ coordinates.push( sections[i].coordinates ) }
+                    }
+                    if(coordinates.length === 0){ return res.status(400).send('Este usuario no está asignado a ninguna sección. Un administrador debe .') }
                     let userResponse = {
                         userName, 
                         rol: user.rol, 
@@ -57,7 +68,7 @@ const login = async (req, res) => {
                         plants: user.plants, 
                         id: user._id, 
                         missingPlants: user.missingPlants,
-                        section: section.coordinates
+                        section: coordinates
                     }
                     res.json({ logged: true, user: userResponse, token }) 
                 }else if(user.rol === "manager"){                
