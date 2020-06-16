@@ -10,9 +10,9 @@ const getPlant = async (req, res) => {
     const { plantsUser } = req.body
     if(id){
         let plants = plantsUser
-        let plant = await plantCollection.findById(id)
+        let plant = await plantCollection.findById(JSON.stringyfy(id))
         if(plant){
-            const idx = plants.findIndex( plantID => plantID === id )
+            const idx = plants.findIndex( plantID => plantID == id )
             if(idx >= 0){ res.status(200).json({plant, status: true}) }
             else{ res.status(400).send('No tienes permiso para leer este código') }
         }else{
