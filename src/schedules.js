@@ -32,34 +32,36 @@ const jobCheckEmployeeDone = new CronJob('0 0 3 */1 * *', async () => {
 
             let section = await sectionCollection.findById(employees[i].section)
 
-            let plantsOwner = await plantCollection.find({ 'owner': section.owner }).sort({ serialNumber: 1 })
+            if(section){
+                let plantsOwner = await plantCollection.find({ 'owner': section.owner }).sort({ serialNumber: 1 })
 
-            let dateCheckFrom = moment(moment(section.checkDateFrom, 'DD/MM/YYYY').subtract(1, 'day').toDate()).format('DD/MM/YYYY')
-            let dateCheckTo = moment(moment(section.checkDateTo, 'DD/MM/YYYY').add(1, 'day').toDate()).format('DD/MM/YYYY')            
-
-            let plantFrom = numberToSerialNumber(employees[i].plantsToDisplay.split('-')[0])
-            let plantTo = numberToSerialNumber(employees[i].plantsToDisplay.split('-')[1])                
-
-            let plants = []
-
-            for(let j = Number(plantFrom) - 1; j < Number(plantTo); j++){
-                plants.push( plantsOwner[j] )
-            }
-
-            let missingPlants = []
-
-            for(let j = 0; j < plants.length; j++){
-                if(plants[j].lastUpdate){
-                    if(!checkDate(plants[j].lastUpdate, dateCheckFrom, dateCheckTo)){
+                let dateCheckFrom = moment(moment(section.checkDateFrom, 'DD/MM/YYYY').subtract(1, 'day').toDate()).format('DD/MM/YYYY')
+                let dateCheckTo = moment(moment(section.checkDateTo, 'DD/MM/YYYY').add(1, 'day').toDate()).format('DD/MM/YYYY')            
+    
+                let plantFrom = numberToSerialNumber(employees[i].plantsToDisplay.split('-')[0])
+                let plantTo = numberToSerialNumber(employees[i].plantsToDisplay.split('-')[1])                
+    
+                let plants = []
+    
+                for(let j = Number(plantFrom) - 1; j < Number(plantTo); j++){
+                    plants.push( plantsOwner[j] )
+                }
+    
+                let missingPlants = []
+    
+                for(let j = 0; j < plants.length; j++){
+                    if(plants[j].lastUpdate){
+                        if(!checkDate(plants[j].lastUpdate, dateCheckFrom, dateCheckTo)){
+                            missingPlants.push(plants[j].serialNumber)
+                        }
+                    }else{
                         missingPlants.push(plants[j].serialNumber)
                     }
-                }else{
-                    missingPlants.push(plants[j].serialNumber)
                 }
+                
+                employees[i].missingPlants = missingPlantsFormatted(missingPlants)
+                employees[i].save()
             }
-            
-            employees[i].missingPlants = missingPlantsFormatted(missingPlants)
-            employees[i].save()
            
         }
     }catch(e){ console.log(e) }

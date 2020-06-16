@@ -167,21 +167,23 @@ const updateUserwPhoto = async (req, res) => {
                 
                 let difference = Number(newUser.nPlants) - Number(lastValuePlants)
 
-                if(difference > 0){
+                if(difference > 0){                    
+
                     let plantsOwned = await plantCollection.find({ 'owned': false }).sort({ serialNumber: 1 })
 
-                    for( let i = 0; i < difference; i++ ){
-                        plantsOwned[i].owned = true
-                        plantsOwned[i].owner = newUser._id
-                        plantsOwned[i].save()
-                    }
+                    let plantFrom = plantsOwned[0].serialNumber
+                    let plantTo = plantsOwned[ difference].serialNumber
+
+                    await plantCollection.updateMany({ serialNumber: { $gte: plantFrom, $lte: plantTo } },{ owned: true, owner: newUser._id })
                 }else if(difference < 0){
+
                     let plantsOwned = await plantCollection.find({ 'owner': newUser._id }).sort({ serialNumber: 1 })
 
-                    for(let i = Number(newUser.nPlants) - 1; i < plantsOwned.length; i++){
-                        plantsOwned[i].owned = false
-                        plantsOwned[i].save()
-                    }
+                    let plantFrom = plantsOwned[plantsOwned.length - difference].serialNumber
+                    let plantTo = plantsOwned[ plantsOwned.length - 1].serialNumber
+
+                    await plantCollection.updateMany({ serialNumber: { $gte: plantFrom, $lte: plantTo } },{ owned: false })
+
                 }
             
             }
@@ -243,11 +245,10 @@ const createUser = async (req, res) => {
                 
                 let plantsOwned = await plantCollection.find({ 'owned': false }).sort({ serialNumber: 1 })
 
-                for( let i = 0; i < newUserDB.nPlants; i++ ){
-                    plantsOwned[i].owned = true
-                    plantsOwned[i].owner = newUserDB._id
-                    plantsOwned[i].save()
-                }
+                let plantFrom = plantsOwned[0].serialNumber
+                let plantTo = plantsOwned[ Number(newUserDB.nPlants ) - 1 ].serialNumber
+
+                await plantCollection.updateMany({ serialNumber: { $gte: plantFrom, $lte: plantTo } },{ owned: true, owner: newUserDB._id })
             
             }
             
@@ -301,21 +302,23 @@ const updatewoPhoto = async (req, res) => {
                 
                 let difference = Number(newUser.nPlants) - Number(lastValuePlants)
 
-                if(difference > 0){
+                if(difference > 0){                    
+
                     let plantsOwned = await plantCollection.find({ 'owned': false }).sort({ serialNumber: 1 })
 
-                    for( let i = 0; i < difference; i++ ){
-                        plantsOwned[i].owned = true
-                        plantsOwned[i].owner = newUser._id
-                        plantsOwned[i].save()
-                    }
+                    let plantFrom = plantsOwned[0].serialNumber
+                    let plantTo = plantsOwned[ difference].serialNumber
+
+                    await plantCollection.updateMany({ serialNumber: { $gte: plantFrom, $lte: plantTo } },{ owned: true, owner: newUser._id })
                 }else if(difference < 0){
+
                     let plantsOwned = await plantCollection.find({ 'owner': newUser._id }).sort({ serialNumber: 1 })
 
-                    for(let i = Number(newUser.nPlants) - 1; i < plantsOwned.length; i++){
-                        plantsOwned[i].owned = false
-                        plantsOwned[i].save()
-                    }
+                    let plantFrom = plantsOwned[plantsOwned.length - difference].serialNumber
+                    let plantTo = plantsOwned[ plantsOwned.length - 1].serialNumber
+
+                    await plantCollection.updateMany({ serialNumber: { $gte: plantFrom, $lte: plantTo } },{ owned: false })
+
                 }
             
             }
