@@ -1,5 +1,6 @@
 const getStream = require('into-stream');
 const moment = require('moment')
+const mongoose = require('mongoose')
 
 const {getBlobName, containerName, blobService, getFileUrl} = require('../azure')
 
@@ -9,10 +10,10 @@ const getPlant = async (req, res) => {
     const { id } = req.query
     const { plantsUser } = req.body
     if(id){
-        let plants = plantsUser
-        let plant = await plantCollection.findById(JSON.stringify(id))
+        let plants = plantsUser        
+        let plant = await plantCollection.findById(id.replace(/\"/g, ''))
         if(plant){
-            const idx = plants.findIndex( plantID => plantID == id )
+            const idx = plants.findIndex( plantID => plantID == id.replace(/\"/g, '') )
             if(idx >= 0){ res.status(200).json({plant, status: true}) }
             else{ res.status(400).send('No tienes permiso para leer este código') }
         }else{
