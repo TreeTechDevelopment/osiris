@@ -20,7 +20,7 @@ const getUsers  = async (req,res)=> {
             let employees = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol plantsToDisplay nPlants meanReads')
             for(let i = 0; i < employees.length; i++){
                 let section = await sectionCollection.findById(employees[i].section)
-                employees[i].section = section.sectionName
+                if(section){ employees[i].section = section.sectionName }
             }
             res.json({ employees, owners })
             return
