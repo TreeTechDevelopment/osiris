@@ -81,7 +81,7 @@ const getPlantBySection = async (req,res) => {
 
 const updatePlant = async (req, res) => {    
     const { id, name, width, height, numberFruits, temperature, type, date, plantedDate } = req.body.newPlant    
-    let plant = await plantCollection.findById(id)     
+    let plant = await plantCollection.findById(id.replace(/\"/g, ''))     
     updateDate = moment(date).format('DD MM YYYY')
 
     plant.name = name 
@@ -98,7 +98,7 @@ const updatePlant = async (req, res) => {
 
 const deleteReport = async (req,res) => {
     let { id } = req.body    
-    let plant = await plantCollection.findById(id)
+    let plant = await plantCollection.findById(id.replace(/\"/g, ''))
     for(let i = 0; i < plant.imagesReport.length; i++){
         blobService.deleteBlobIfExists(containerName, plant.imagesReport[i].uri.split('/')[4], (err, result) => {
             if(err) {
@@ -119,7 +119,7 @@ const reportPlant = async (req, res) => {
     const files = req.files    
     const { user, plantid, description, date } = req.body
     try{
-        let plant = await plantCollection.findById(plantid)
+        let plant = await plantCollection.findById(plantid.replace(/\"/g, ''))
         let imagesReport = []
         if(plant.imagesReport){ imagesReport = plant.imagesReport }
         for(let i = 0; i < files.length; i++){
@@ -153,7 +153,7 @@ const updatePlants = async (req, res) => {
         console.log(plants)
         for(let i = 0; i < plants.length; i++){
             const { id, name, width, height, numberFruits, type, date, plantedDate } = plants[i]    
-            let plant = await plantCollection.findById(id)     
+            let plant = await plantCollection.findById(id.replace(/\"/g, ''))     
             updateDate = moment(date).format('DD MM YYYY')
             if(name !== ""){ plant.name = name }
             if(width !== ""){ plant.width = Number(width) }
