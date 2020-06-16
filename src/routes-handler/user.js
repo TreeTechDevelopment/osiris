@@ -17,18 +17,28 @@ const getUsers  = async (req,res)=> {
         let users = []
         if(rol2){
             let owners = await userCollection.find({ 'rol': rol2 }, 'name userName rol nPlants')
-            let employees = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol plantsToDisplay nPlants')
+            let employees = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol plantsToDisplay nPlants meanReads')
+            for(let i = 0; i < employees.length; i++){
+                let section = await sectionCollection.findById(employees[i].section)
+                employees[i].section = section.sectionName
+            }
             res.json({ employees, owners })
             return
         }
         if(section){ 
             let sectionDB = await sectionCollection.findOne({ 'sectionName': section })
-            users = await userCollection.find({ 'section': sectionDB._id }, 'name userName photo address plants section todos rol plantsToDisplay nPlants')
+            users = await userCollection.find({ 'section': sectionDB._id }, 'name userName photo address plants section todos rol plantsToDisplay nPlants meanReads')
             for(let i = 0; i < users.length; i++){
                 users[i].section = sectionDB.sectionName
             }
         }
-        else{ users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol plantsToDisplay nPlants') }
+        else{ 
+            users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol plantsToDisplay nPlants meanReads') 
+            for(let i = 0; i < users.length; i++){
+                let section = await sectionCollection.findById(users[i].section)
+                users[i].section = section.sectionName
+            }
+        }
         if(sections){
             let sections = await sectionCollection.find({})
             res.status(200).json({ users, sections }) 

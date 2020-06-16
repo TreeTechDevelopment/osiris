@@ -2,10 +2,20 @@ const moment = require('moment');
 
 const numberToSerialNumber = (number) => {
     let serialNumber = ''    
+    if(parseInt(number) >= 0){ serialNumber = `0000${parseInt(number)}` }
+    if(parseInt(number) >= 10){ serialNumber = `000${parseInt(number)}` }
+    if(parseInt(number) >= 100){ serialNumber = `00${parseInt(number)}` }
+    if(parseInt(number) >= 1000){ serialNumber = `0${parseInt(number)}` }
+    if(parseInt(number) >= 10000){ serialNumber = `${parseInt(number)}` }
+    return serialNumber
+}
+
+const numberToSerialNumberQR = (number) => {
+    let serialNumber = ''    
     if(parseInt(number) >= 0){ serialNumber = `000${parseInt(number)}` }
     if(parseInt(number) >= 10){ serialNumber = `00${parseInt(number)}` }
     if(parseInt(number) >= 100){ serialNumber = `0${parseInt(number)}` }
-    if(parseInt(number) >= 1000){ serialNumber = `${parseInt(number)}` }
+    if(parseInt(number) >= 1000){ serialNumber = `${parseInt(number)}` }    
     return serialNumber
 }
 
@@ -43,5 +53,6 @@ const missingPlantsFormatted = (serialNumbers) => {
 module.exports = {
     numberToSerialNumber,
     checkDate,
-    missingPlantsFormatted
+    missingPlantsFormatted,
+    numberToSerialNumberQR
 }

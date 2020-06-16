@@ -52,7 +52,8 @@ const createPDF = async (name, total, kg, date, sign, photo, callback) => {
     const options = {
         height: "10cm",       
         width: "5cm", 
-        footer:{ height: "0cm" }
+        footer:{ height: "0cm" },
+        phantomArgs: ['--local-url-access=false']
     }
 
     pdf.create(html, options).toBuffer((err, buf) => { callback(err, { doc: buf, date }) })
