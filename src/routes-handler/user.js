@@ -34,9 +34,11 @@ const getUsers  = async (req,res)=> {
         }
         else{ 
             users = await userCollection.find({ 'rol': rol }, 'name userName photo address plants section todos rol plantsToDisplay nPlants meanReads') 
-            for(let i = 0; i < users.length; i++){
-                let section = await sectionCollection.findById(users[i].section)
-                users[i].section = section.sectionName
+            if(rol === "employee"){
+                for(let i = 0; i < users.length; i++){
+                    let section = await sectionCollection.findById(users[i].section)
+                    users[i].section = section.sectionName
+                }
             }
         }
         if(sections){
