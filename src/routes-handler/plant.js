@@ -10,7 +10,7 @@ const getPlant = async (req, res) => {
     const { plantsUser } = req.body
     if(id){
         let plants = plantsUser
-        let plant = await plantCollection.findById(JSON.stringyfy(id))
+        let plant = await plantCollection.findById(JSON.stringify(id))
         if(plant){
             const idx = plants.findIndex( plantID => plantID == id )
             if(idx >= 0){ res.status(200).json({plant, status: true}) }
