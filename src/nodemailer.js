@@ -14,7 +14,7 @@ const sendEmail = (data, callbackSuccess, errCallback) => {
     const fileName = `venta_${data.date.replace(/\//g, '-')}.pdf`
     const mailOptions = {
         from: 'Kaffeedehigo',
-        to: "treetechdevelopment@outlook.es",
+        to: "asdehigo@gmail.com",
         subject: 'Nueva venta generada',
         generateTextFromHTML: true,
         text: "Nueva venta generada",
