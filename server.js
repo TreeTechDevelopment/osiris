@@ -5,6 +5,8 @@ if (process.env.NODE_ENV !== 'production') {
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
+const helmet = require('helmet');
+
 
 require('./src/db/db');
 require('./src/schedules')
@@ -13,6 +15,7 @@ const PORT = process.env.PORT || 3000
 
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
+app.use(helmet());
 app.use(require('./src/routes/routes'))
 
 const server = require('http').createServer(app)

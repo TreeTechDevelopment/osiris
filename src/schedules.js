@@ -12,9 +12,11 @@ const { checkDate, missingPlantsFormatted, numberToSerialNumber } = require('./h
 const { containerName, blobService} = require('./azure')
 
 const jobGetWeather = new CronJob('0 */30 * * * *', () => {
+//const jobGetWeather = new CronJob('0 */1 * * * *', () => {
     axios.get(`https://api.openweathermap.org/data/2.5/weather?q=Lerdo&units=metric&appid=${process.env.OPENWEATHERMAP_KEY}`)
         .then((res) => {
             const temperature = res.data.main.temp
+            console.log(temperature)
             sectionCollection.updateMany({}, { temperature }, (err, res) => {
                 if(err){
                     console.log(err)
